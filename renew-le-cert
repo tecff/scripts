@@ -1,0 +1,50 @@
+#!/bin/bash
+# this script handles certificate renewals for a webserver using the "Let's Encrypt" service
+# dependencies: python3, acme-tiny
+# tested on Debian Jessie with systemd and either Apache or nginx
+
+function die(){
+    echo "$2" 1>&2
+    exit $1
+}
+
+[ "$#" == 6 ] || die 1 "correct usage: $0 ACMETINYPATH ACCOUNTKEYPATH CSRPATH CHALLENGEDIR CRTPATH CRTCHAINEDPATH"
+
+ACMETINY="$1"
+ACCKEY="$2"
+CSR="$3"
+CHLGDIR="$4"
+CRT="$5"
+CRTCHAINED="$6"
+CRTCHAIN="/etc/ssl/private/lets-encrypt-x3-cross-signed.pem"
+CRTTMP="/etc/ssl/private/tmp.crt"
+
+# check if script is already running
+exec 200<$0
+flock -n 200 || die 2 "the script tried to start again while it's still running"
+
+[ -r $CRTCHAIN ] ||	die 3 "failed to read certificate chain $CRTCHAIN"
+[ -r $ACMETINY ] || die 4 "can't read $ACMETINY"
+[ -r $ACCKEY ] || die 5 "can't read $ACCKEY"
+[ -r $CSR ] || die 6 "can't read $CSR"
+[ -d $CHLGDIR ] || die 7 "can't find directory $CHLGDIR"
+[ -w $CHLGDIR ] || die 8 "can't write to directory $CHLGDIR"
+[ -w $CRT ] || die 9 "can't write to file $CRT or it doesn't exist"
+[ -w $CRTCHAINED  ] || die 10 "can't write to file $CRTCHAINED or it doesn't exist"
+
+python3 $ACMETINY --account-key $ACCKEY --csr $CSR --acme-dir $CHLGDIR --quiet > $CRTTMP || die 11 "failed to update certificate using acme http-01 protocol"
+
+cp -a $CRT ${CRT}.bak || die 12 "couldn't copy old certificate to backup file, new is at $CRTTMP"
+mv $CRTTMP $CRT || ERR=1
+cat $CRT $CRTCHAIN > $CRTCHAINED || ERR=1
+if [ -x /usr/sbin/apache2 ]; then
+	systemctl reload apache2 || ERR=1
+elif [ -x /usr/sbin/nginx ]; then
+	systemctl reload nginx || ERR=1
+else
+	die 13 "neither apache2 nor nginx seem to be installed, can't reload"
+fi
+if [ "$ERR" == "1" ]; then
+	mv ${CRT}.bak $CRT
+	die 14 "failed to use the new certificate, restored the old one"
+fi

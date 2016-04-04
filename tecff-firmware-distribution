@@ -1,0 +1,79 @@
+#!/bin/bash
+# this script copies gluon firmware images to their public distribution points
+# dependencies: lftp, rsync
+
+SRVFTP="ftp.freifunk-altdorf.de"
+SRVFTP_USR="21271-ffafw"
+SRVSSH="gw02.tecff.de"
+SRVSSH_USR="root"
+SRVSSH_PATH="/var/www/html/fw"
+if [ ! "$#" -eq 1 ] || [ ! -d "$1" ]; then
+	echo "please specify the source directory as the first parameter"
+	exit 1
+fi
+SRC="$1"
+if [[ "$SRC" =~ ^.+xperimental.+$ ]]; then
+	BRANCH="experimental"
+elif [[ "$SRC" =~ ^.+table.+$ ]]; then
+	BRANCH="stable"
+fi
+if [ -z "$BRANCH" ]; then
+	echo "the source directory doesn't seem to be correct, it has to contain either experimental or stable"
+	exit 1
+fi
+if [ ! -d "$SRC/factory" ] || [ ! -d "$SRC/sysupgrade" ]; then
+	echo "couldn't find either factory or sysupgrade subdirectories"
+	exit 1
+fi
+if [ ! -f "$SRC/sysupgrade/${BRANCH}.manifest" ]; then
+	echo "manifest missing: $SRC/sysupgrade/${BRANCH}.manifest"
+	exit 1
+fi
+if [ "$BRANCH" == "experimental" ] && [ "$(tail -3 $SRC/sysupgrade/${BRANCH}.manifest | head -1)" != "---" ]; then
+	echo "can't find enough signatures on the manifest file: $SRC/sysupgrade/${BRANCH}.manifest"
+	exit 1
+fi
+if [ "$BRANCH" == "stable" ] && [ "$(tail -4 $SRC/sysupgrade/${BRANCH}.manifest | head -1)" != "---" ]; then
+	echo "can't find enough signatures on the manifest file: $SRC/sysupgrade/${BRANCH}.manifest"
+	exit 1
+fi
+
+# prompt for FTP password
+read -p "Please enter the FTP password for user $SRVFTP_USR on server ${SRVFTP}: " SRVFTP_PW
+if [ -z "$SRVFTP_PW" ]; then
+	echo "you haven't specified a ftp password"
+	exit 1
+fi
+
+echo "are you sure you backed up the old firmware on the update servers?"
+echo "it will be overwritten if you dont interrupt now!"
+sleep 5
+
+# ftp copy
+echo "starting ftp copy..."
+cd $SRC
+lftp -u $SRVFTP_USR,$SRVFTP_PW ftp://$SRVFTP <<EOF
+set ssl:verify-certificate no
+set ftp:ssl-force true
+set ftp:ssl-protect-data true
+lcd factory
+cd $BRANCH
+rm -r factory
+mkdir factory
+cd factory
+mput *
+lcd ../sysupgrade
+cd ..
+rm -r sysupgrade
+mkdir sysupgrade
+cd sysupgrade
+mput *
+exit
+EOF
+
+# ssh copy
+echo "starting ssh copy... (needs ssh agent redirection)"
+rsync -rltv --delete $SRC/factory/ $SRVSSH_USR@$SRVSSH:/$SRVSSH_PATH/$BRANCH/factory/
+rsync -rltv --delete $SRC/sysupgrade/ $SRVSSH_USR@$SRVSSH:/$SRVSSH_PATH/$BRANCH/sysupgrade/
+
+echo "finished."

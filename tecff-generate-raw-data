@@ -1,0 +1,29 @@
+#!/bin/bash
+# this script saves information about nodes from B.A.T.M.A.N./A.L.F.R.E.D to files
+# dependencies: batadv-vis, alfred-json, batctl
+
+if [ -z "$1" ] || [ ! -d "$1" ]; then
+	echo "no output directory specified!"
+	exit 1
+fi
+
+OUTDIR="$1"
+
+batadv-vis -f dot > $OUTDIR/batadv-vis_-f_dot
+batadv-vis -f json > $OUTDIR/batadv-vis_-f_json
+batadv-vis -f jsondoc > $OUTDIR/batadv-vis_-f_jsondoc
+
+alfred-json -r 158 -f json -z > $OUTDIR/alfred-json_-r_158_-f_json
+alfred-json -r 159 -f json -z > $OUTDIR/alfred-json_-r_159_-f_json
+alfred-json -r 160 -f json -z > $OUTDIR/alfred-json_-r_160_-f_json
+alfred-json -r 190 -f json -z > $OUTDIR/alfred-json_-r_190_-f_json
+alfred-json -r 191 -f json -z > $OUTDIR/alfred-json_-r_191_-f_json
+
+batctl o > $OUTDIR/batctl_o
+batctl gwl  > $OUTDIR/batctl_gwl
+batctl tl > $OUTDIR/batctl_tl
+# contains macs of clients -> disabled for privacy reasons
+#batctl tg > $OUTDIR/batctl_tg
+batctl nn > $OUTDIR/batctl_nn
+batctl s > $OUTDIR/batctl_s
+

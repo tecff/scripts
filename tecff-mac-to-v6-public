@@ -1,0 +1,11 @@
+#!/usr/bin/env python3
+# this script takes a mac address and generates the corresponding tecff public IPv6 address
+
+import sys
+from netaddr import EUI
+
+input = sys.argv[1]
+
+mac = EUI(input)
+
+print(str(mac.ipv6_link_local()).replace('fe80::', '2001:470:733f::'))

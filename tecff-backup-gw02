@@ -1,0 +1,16 @@
+#!/bin/bash
+# this script backs up important data on tecff server gw02 
+# dependencies: duplicity
+
+BSRV="backup0.nlams0.conemu.net"
+BUSR="b_freifunkaltdorf_gw02"
+BPATH="/data/duplicity"
+LOGPATH="/var/log/duplicity-gw02.log"
+
+# /var/local/tecff-data
+duplicity full --no-encryption /var/local/tecff-data sftp://${BUSR}@${BSRV}/${BPATH}/tecff-data >> ${LOGPATH}
+duplicity remove-older-than 4W --force sftp://${BUSR}@${BSRV}/${BPATH}/tecff-data >> ${LOGPATH}
+
+# /var/local/tecff-raw
+duplicity full --no-encryption /var/local/tecff-raw sftp://${BUSR}@${BSRV}/${BPATH}/tecff-raw >> ${LOGPATH}
+duplicity remove-older-than 4W --force sftp://${BUSR}@${BSRV}/${BPATH}/tecff-raw >> ${LOGPATH}

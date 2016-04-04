@@ -1,0 +1,12 @@
+#!/bin/bash
+# this script backs up important data on tecff server stat01
+# dependencies: duplicity
+
+BSRV="backup0.nlams0.conemu.net"
+BUSR="b_freifunkaltdorf_stat01"
+BPATH="/data/duplicity"
+LOGPATH="/var/log/duplicity-stat01.log"
+
+# /var/lib/graphite
+duplicity full --no-encryption /var/lib/graphite sftp://${BUSR}@${BSRV}/${BPATH}/graphite >> ${LOGPATH}
+duplicity remove-older-than 14D --force sftp://${BUSR}@${BSRV}/${BPATH}/graphite >> ${LOGPATH}

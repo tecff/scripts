@@ -1,0 +1,29 @@
+#!/bin/bash
+# this script is used on a B.A.T.M.A.N. gateway to change the routing of IPv6 packages to use the 6in4 tunnel
+# dependencies: ip6tables, iproute2
+
+if [ -z "$1" ] || [ -z "$2" ] || [ -z "$3" ] || [ -z "$4" ] || [ -z "$5" ]; then
+	echo "missing parameters! ((up|down), BRIDGEIF, TUNIF, DEFGW, SUBNETIP)"
+	exit 1
+fi
+
+BRIDGEIF="$2"
+TUNIF="$3"
+DEFGW="$4"
+SUBNETIP="$5"
+
+if [ "$1" == "up" ]; then
+	ip -6 addr add $SUBNETIP dev $BRIDGEIF
+	ip -6 route add unreachable default metric 2000 table 42
+	ip -6 route add default via $DEFGW table 42
+	ip -6 rule add iif $BRIDGEIF table 42
+	ip6tables -A FORWARD -i $TUNIF -o $BRIDGEIF -m comment --comment "000 Allow v6-tunnel to bridge forwarding" -j ACCEPT
+	ip6tables -A FORWARD -i $BRIDGEIF -o $TUNIF -m comment --comment "000 Allow bridge to v6-tunnel forwarding" -j ACCEPT
+else
+	ip6tables -D FORWARD -i $TUNIF -o $BRIDGEIF -m comment --comment "000 Allow v6-tunnel to bridge forwarding" -j ACCEPT
+	ip6tables -D FORWARD -i $BRIDGEIF -o $TUNIF -m comment --comment "000 Allow bridge to v6-tunnel forwarding" -j ACCEPT
+	ip -6 rule del iif $BRIDGEIF table 42
+	ip -6 route del default via $DEFGW table 42
+	ip -6 route del unreachable default metric 2000 table 42
+	ip -6 addr del $SUBNETIP dev $BRIDGEIF
+fi

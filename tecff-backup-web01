@@ -1,0 +1,20 @@
+#!/bin/bash
+# this script backs up important data on tecff server web01
+# dependencies: duplicity
+
+BSRV="backup0.nlams0.conemu.net"
+BUSR="b_freifunkaltdorf_web01"
+BPATH="/data/duplicity"
+LOGPATH="/var/log/duplicity-web01.log"
+
+# /var/lib/grafana/grafana.db
+duplicity full --no-encryption /var/lib/grafana/grafana.db sftp://${BUSR}@${BSRV}/${BPATH}/grafana-db >> ${LOGPATH}
+duplicity remove-older-than 3M --force sftp://${BUSR}@${BSRV}/${BPATH}/grafana-db >> ${LOGPATH}
+
+# /home/php-zerobin
+duplicity full --no-encryption /home/php-zerobin sftp://${BUSR}@${BSRV}/${BPATH}/php-zerobin >> ${LOGPATH}
+duplicity remove-older-than 4W --force sftp://${BUSR}@${BSRV}/${BPATH}/php-zerobin >> ${LOGPATH}
+
+# /home/php-dokuwiki
+duplicity full --no-encryption /home/php-dokuwiki sftp://${BUSR}@${BSRV}/${BPATH}/dokuwiki >> ${LOGPATH}
+duplicity remove-older-than 3M --force sftp://${BUSR}@${BSRV}/${BPATH}/dokuwiki >> ${LOGPATH}

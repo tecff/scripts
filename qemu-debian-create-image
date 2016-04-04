@@ -1,0 +1,166 @@
+#!/bin/bash
+
+clean_debian() {
+	[ "$MNT_DIR" != "" ] && chroot $MNT_DIR umount /proc/ /sys/ /dev/
+	sleep 1
+	[ "$MNT_DIR" != "" ] && umount $MNT_DIR
+	sleep 1
+	[ "$DISK" != "" ] && qemu-nbd -d $DISK
+	sleep 1
+	[ "$MNT_DIR" != "" ] && rm -r $MNT_DIR
+}
+
+fail() {
+	clean_debian
+	echo ""
+	echo "FAILED: $1"
+	exit 1
+}
+
+cancel() {
+	fail "CTRL-C detected"
+}
+
+if [ $# -lt 10 ]; then
+	echo "original author: Kamil Trzcinski (https://ayufan.eu/)"
+	echo "modified by: Andreas Ziegler (https://github.com/rotanid)"
+	echo "license: GPL"
+	echo "usage: $0 <image-file> <image-size> <hostname> <release> <ipv4 address> <ipv4 netmask> <ipv4 gateway> <ipv6 address> <ipv6 netmask> <ipv6 gateway> [optional debootstrap args]" 1>&2
+	exit 1
+fi
+
+IMGFILE=$1
+IMGSIZE=$2
+HOSTNAME=$3
+RELEASE=$4
+IPADDR_V4=$5
+IPMASK_V4=$6
+IPGW_V4=$7
+IPPTP_V4="$IPGW_V4"
+IPADDR_V6=$8
+IPMASK_V6=$9
+IPGW_V6=${10}
+shift 10
+
+# variables
+DEBPKGS="openssh-server,acpid,acpi-support-base"
+DEBMIRROR="http://httpredir.debian.org/debian"
+
+trap cancel INT
+
+echo "Creating $IMGFILE with size $IMGSIZE..."
+
+qemu-img create -f qcow2 $IMGFILE $IMGSIZE
+
+echo "Installing $RELEASE into $IMGFILE..."
+
+MNT_DIR=`mktemp -d`
+DISK=
+
+echo "Looking for nbd device..."
+
+modprobe nbd max_part=16 || fail "failed to load nbd module into kernel"
+
+for i in /dev/nbd* ; do
+	if qemu-nbd -c $i $IMGFILE
+	then
+		DISK=$i
+		break
+	fi
+done
+
+[ "$DISK" == "" ] && fail "no nbd device available"
+
+echo "Connected $IMGFILE to $DISK"
+
+echo "Partitioning $DISK..."
+sfdisk $DISK -q -D -uM << EOF || fail "cannot partition $IMGFILE"
+,512,82
+;
+EOF
+
+echo "Creating swap partition..."
+mkswap ${DISK}p1 || fail "cannot create swap partition fs"
+
+echo "Creating root partition..."
+mkfs.ext4 -q ${DISK}p2 || fail "cannot create / ext4"
+
+echo "Mounting root partition..."
+mount ${DISK}p2 $MNT_DIR || fail "cannot mount /"
+
+echo "Installing Debian $RELEASE..."
+debootstrap --include=$DEBPKGS $* $RELEASE $MNT_DIR $DEBMIRROR || fail "cannot install $RELEASE into $DISK"
+
+echo "Configuring system..."
+cat <<EOF > $MNT_DIR/etc/fstab
+/dev/vda2 /                   ext4    errors=remount-ro 0       1
+EOF
+
+echo $HOSTNAME > $MNT_DIR/etc/hostname
+
+cat <<EOF > $MNT_DIR/etc/hosts
+# IPv4
+127.0.0.1       localhost
+$IPADDR_V4	$HOSTNAME
+
+# IPv6
+::1     localhost ip6-localhost ip6-loopback
+fe00::0 ip6-localnet
+ff00::0 ip6-mcastprefix
+ff02::1 ip6-allnodes
+ff02::2 ip6-allrouters
+ff02::3 ip6-allhosts
+$IPADDR_V6	$HOSTNAME
+EOF
+
+cat <<EOF > $MNT_DIR/etc/network/interfaces
+auto lo
+iface lo inet loopback
+
+auto eth0
+iface eth0 inet static
+	address $IPADDR_V4
+	netmask $IPMASK_V4
+	pointopoint $IPPTP_V4
+	gateway	$IPGW_V4
+
+iface eth0 inet6 static
+	address $IPADDR_V6
+	netmask $IPMASK_V6
+	gateway $IPGW_V6
+EOF
+
+mount --bind /dev/ $MNT_DIR/dev || fail "cannot bind /dev"
+chroot $MNT_DIR mount -t proc none /proc || fail "cannot mount /proc"
+chroot $MNT_DIR mount -t sysfs none /sys || fail "cannot mount /sys"
+LANG=C DEBIAN_FRONTEND=noninteractive chroot $MNT_DIR apt-get install -y -q linux-image-amd64 grub-pc || fail "cannot install linux-image and grub"
+chroot $MNT_DIR grub-install $DISK || fail "cannot install grub"
+chroot $MNT_DIR update-grub || fail "cannot update grub"
+
+sed -i "s|${DISK}p2|/dev/vda2|g" $MNT_DIR/boot/grub/grub.cfg
+
+read -p "Enter your ssh public key (one line!): " SSHPUBKEY
+if [ ! -z "$SSHPUBKEY" ] && [[ "$SSHPUBKEY" =~ "ssh-" ]]; then
+	mkdir -p $MNT_DIR/root/.ssh
+	chmod 0700 $MNT_DIR/root/.ssh
+	echo "$SSHPUBKEY" > $MNT_DIR/root/.ssh/authorized_keys
+	chmod 0600 $MNT_DIR/root/.ssh/authorized_keys
+else
+	echo "you didn't provide a proper ssh pubkey, so you have to enter a password now."
+	echo "please keep in mind, that passwords are less secure!"
+	echo ""
+	echo "Enter root password:"
+	while ! chroot $MNT_DIR passwd root
+	do
+		echo "Try again"
+	done
+	echo "OK, activating password-based root-login via SSH..."
+	sed -i "s|without-password|yes|" $MNT_DIR/etc/ssh/sshd_config
+fi
+
+echo "Finishing grub installation..."
+grub-install $DISK --root-directory=$MNT_DIR --modules="biosdisk part_msdos" || fail "cannot reinstall grub"
+
+echo "SUCCESS!"
+clean_debian
+exit 0
