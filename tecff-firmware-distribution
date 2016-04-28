@@ -60,12 +60,14 @@ lcd factory
 cd $BRANCH
 rm -r factory
 mkdir factory
+chmod 0750 factory
 cd factory
 mput *
 lcd ../sysupgrade
 cd ..
 rm -r sysupgrade
 mkdir sysupgrade
+chmod 0750 sysupgrade
 cd sysupgrade
 mput *
 exit
