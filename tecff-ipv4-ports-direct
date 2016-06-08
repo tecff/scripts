@@ -2,13 +2,14 @@
 # this script is used on a B.A.T.M.A.N. gateway to change the routing of some ports so the traffic doesn't got through the vpn provider
 # dependencies: iptables, iproute2
 
-if [ -z "$1" ] || [ -z "$2" ] || [ -z "$3" ]; then
-	echo "missing parameters! ((up|down), BRIDGEIF, INETIF)"
+if [ -z "$1" ] || [ -z "$2" ] || [ -z "$3" ] || [ -z "$4" ]; then
+	echo "missing parameters! ((up|down), BRIDGEIF, INETIF, PUBV4)"
 	exit 1
 fi
 
 BRIDGEIF="$2"
 INETIF="$3"
+PUBV4="$4"
 TCPPORTS="80,443,25,465,587,143,993,110,995,1194,1293"
 UDPPORTS="500,1194,1293,4500"
 
@@ -27,6 +28,8 @@ if [ "$1" == "up" ]; then
 	# UDP
 	iptables -t mangle -A PREROUTING -i ${BRIDGEIF} -p udp -m multiport --dports ${UDPPORTS} -j DIRECT
 	iptables -t nat -A POSTROUTING -o ${INETIF} -p udp -m multiport --dports ${UDPPORTS} -m comment --comment "000 Masquerade traffic for some ports" -j MASQUERADE
+	iptables -A FORWARD -d ${PUBV4} -i br0 -p udp --dport 10000:11000 -j LOG --log-prefix fastdinfastd
+	iptables -A FORWARD -d ${PUBV4} -i br0 -p udp --dport 10000:11000 -j REJECT --reject-with icmp-port-unreachable
 	iptables -A FORWARD -i ${BRIDGEIF} -o ${INETIF} -p udp -m multiport --dports ${UDPPORTS} -m comment --comment "000 Allow bridge to eth0 forwarding for some ports" -j ACCEPT
 	iptables -A FORWARD -i ${INETIF} -o ${BRIDGEIF} -p udp -m multiport --sports ${UDPPORTS} -m comment --comment "000 Allow eth0 to bridge forwarding for some ports" -j ACCEPT
 	ip rule del fwmark 1 >/dev/null 2>&1
@@ -42,5 +45,7 @@ else
 	iptables -t nat -D POSTROUTING -o ${INETIF} -p udp -m multiport --dports ${UDPPORTS} -m comment --comment "000 Masquerade traffic for some ports" -j MASQUERADE
 	iptables -D FORWARD -i ${BRIDGEIF} -o ${INETIF} -p udp -m multiport --dports ${UDPPORTS} -m comment --comment "000 Allow bridge to eth0 forwarding for some ports" -j ACCEPT
 	iptables -D FORWARD -i ${INETIF} -o ${BRIDGEIF} -p udp -m multiport --sports ${UDPPORTS} -m comment --comment "000 Allow eth0 to bridge forwarding for some ports" -j ACCEPT
+	iptables -D FORWARD -d ${PUBV4} -i br0 -p udp --dport 10000:11000 -j LOG --log-prefix fastdinfastd
+	iptables -D FORWARD -d ${PUBV4} -i br0 -p udp --dport 10000:11000 -j REJECT --reject-with icmp-port-unreachable
 	ip rule del fwmark 1
 fi
