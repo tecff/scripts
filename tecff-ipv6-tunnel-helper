@@ -19,7 +19,9 @@ if [ "$1" == "up" ]; then
 	ip -6 rule add iif $BRIDGEIF table 42
 	ip6tables -A FORWARD -i $TUNIF -o $BRIDGEIF -m comment --comment "000 Allow v6-tunnel to bridge forwarding" -j ACCEPT
 	ip6tables -A FORWARD -i $BRIDGEIF -o $TUNIF -m comment --comment "000 Allow bridge to v6-tunnel forwarding" -j ACCEPT
+	systemctl start radvd.service
 else
+	systemctl stop radvd.service
 	ip6tables -D FORWARD -i $TUNIF -o $BRIDGEIF -m comment --comment "000 Allow v6-tunnel to bridge forwarding" -j ACCEPT
 	ip6tables -D FORWARD -i $BRIDGEIF -o $TUNIF -m comment --comment "000 Allow bridge to v6-tunnel forwarding" -j ACCEPT
 	ip -6 rule del iif $BRIDGEIF table 42
