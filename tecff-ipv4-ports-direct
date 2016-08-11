@@ -28,8 +28,8 @@ if [ "$1" == "up" ]; then
 	# UDP
 	iptables -t mangle -A PREROUTING -i ${BRIDGEIF} -p udp -m multiport --dports ${UDPPORTS} -j DIRECT
 	iptables -t nat -A POSTROUTING -o ${INETIF} -p udp -m multiport --dports ${UDPPORTS} -m comment --comment "000 Masquerade traffic for some ports" -j MASQUERADE
-	iptables -A FORWARD -d ${PUBV4} -i br0 -p udp --dport 10000:11000 -j LOG --log-prefix fastdinfastd
-	iptables -A FORWARD -d ${PUBV4} -i br0 -p udp --dport 10000:11000 -j REJECT --reject-with icmp-port-unreachable
+	iptables -A FORWARD -d ${PUBV4} -i bat0 -p udp --dport 10000:11000 -m limit --limit 2/sec -j LOG --log-prefix 'fastd over mesh: '
+	iptables -A FORWARD -d ${PUBV4} -i bat0 -p udp --dport 10000:11000 -j REJECT --reject-with icmp-admin-prohibited
 	iptables -A FORWARD -i ${BRIDGEIF} -o ${INETIF} -p udp -m multiport --dports ${UDPPORTS} -m comment --comment "000 Allow bridge to eth0 forwarding for some ports" -j ACCEPT
 	iptables -A FORWARD -i ${INETIF} -o ${BRIDGEIF} -p udp -m multiport --sports ${UDPPORTS} -m comment --comment "000 Allow eth0 to bridge forwarding for some ports" -j ACCEPT
 	ip rule del fwmark 1 >/dev/null 2>&1
@@ -45,7 +45,7 @@ else
 	iptables -t nat -D POSTROUTING -o ${INETIF} -p udp -m multiport --dports ${UDPPORTS} -m comment --comment "000 Masquerade traffic for some ports" -j MASQUERADE
 	iptables -D FORWARD -i ${BRIDGEIF} -o ${INETIF} -p udp -m multiport --dports ${UDPPORTS} -m comment --comment "000 Allow bridge to eth0 forwarding for some ports" -j ACCEPT
 	iptables -D FORWARD -i ${INETIF} -o ${BRIDGEIF} -p udp -m multiport --sports ${UDPPORTS} -m comment --comment "000 Allow eth0 to bridge forwarding for some ports" -j ACCEPT
-	iptables -D FORWARD -d ${PUBV4} -i br0 -p udp --dport 10000:11000 -j LOG --log-prefix fastdinfastd
-	iptables -D FORWARD -d ${PUBV4} -i br0 -p udp --dport 10000:11000 -j REJECT --reject-with icmp-port-unreachable
+	iptables -D FORWARD -d ${PUBV4} -i bat0 -p udp --dport 10000:11000 -m limit --limit 2/sec -j LOG --log-prefix 'fastd over mesh: '
+	iptables -D FORWARD -d ${PUBV4} -i bat0 -p udp --dport 10000:11000 -j REJECT --reject-with icmp-admin-prohibited
 	ip rule del fwmark 1
 fi
