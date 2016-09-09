@@ -1,0 +1,11 @@
+#!/bin/bash
+# this script loads data about nodes from hopglass-server
+#  and pushes it into graphite-api
+# dependencies: wget, python3, nodes2graphite.py, nc
+
+OUTDIR="/tmp"
+HGSRV="https://map.tecff.de/hopglass-server"
+
+wget -q -T 5 $HGSRV/mv1/nodes.json -O $OUTDIR/mv1-nodes.json
+
+nodes2graphite.py < $OUTDIR/mv1-nodes.json | nc -w 5 localhost 2003
