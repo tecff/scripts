@@ -1,6 +1,9 @@
 #!/bin/bash
-# this script saves information about nodes from B.A.T.M.A.N./A.L.F.R.E.D to files
-# dependencies: batadv-vis, alfred-json, batctl
+# this script saves information about nodes from multiple sources to files
+# sources:
+# - B.A.T.M.A.N.
+# - A.L.F.R.E.D.
+# dependencies: batadv-vis, alfred-json, batctl, tecff-copy-data
 
 OUTDIR="/var/local/tecff-raw"
 
@@ -28,3 +31,4 @@ batctl tl > $OUTDIR/batctl_tl
 batctl nn > $OUTDIR/batctl_nn
 batctl s > $OUTDIR/batctl_s
 
+tecff-copy-data
