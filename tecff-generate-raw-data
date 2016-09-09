@@ -28,7 +28,9 @@ batctl gwl  > $OUTDIR/batctl_gwl
 batctl tl > $OUTDIR/batctl_tl
 # contains macs of clients -> disabled for privacy reasons
 #batctl tg > $OUTDIR/batctl_tg
-batctl nn > $OUTDIR/batctl_nn
 batctl s > $OUTDIR/batctl_s
+
+# wait for ffmap-backend
+sleep 8
 
 tecff-copy-data
