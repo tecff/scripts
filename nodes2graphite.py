@@ -25,7 +25,8 @@ def load_metrics(f):
     for (node_id,node_data) in nodes['nodes'].items():
         for m in get_metrics(ts, node_data['statistics'], 'nodes.' + node_id):
             yield m
-        total_clients += node_data['statistics']['clients']
+        if 'clients' in node_data['statistics']:
+            total_clients += node_data['statistics']['clients']
         if node_data['flags']['online']: online_nodes += 1
 
     yield ('node-stats.online', (ts, online_nodes))
@@ -37,10 +38,10 @@ def get_pickled_msg(metrics):
     return header + payload
 
 def main():
-    metrics = load_metrics(sys.stdin)
-
-    for (k,(t,v)) in metrics:
-        print(' '.join(map(str, [k,v,t])))
+    with open(sys.argv[1], encoding='utf-8') as data_file:
+        metrics = load_metrics(data_file)
+        for (k,(t,v)) in metrics:
+            print(' '.join(map(str, [k,v,t])))
 
 if __name__ == '__main__':
     main()
