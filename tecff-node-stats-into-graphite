@@ -8,4 +8,4 @@ HGSRV="https://map.tecff.de/hopglass-server"
 
 wget -q -T 5 $HGSRV/mv1/nodes.json -O $OUTDIR/mv1-nodes.json
 
-nodes2graphite.py < $OUTDIR/mv1-nodes.json | nc -w 5 localhost 2003
+nodes2graphite.py $OUTDIR/mv1-nodes.json | nc -w 10 localhost 2003
