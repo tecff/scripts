@@ -1,0 +1,53 @@
+#!/bin/bash
+PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+
+# number of old backups that should be kept
+DAYS="7"
+
+PRIO="nice -n 19 ionice -c3"
+MAUTH="--defaults-file=/etc/mysql/debian.cnf"
+
+# directory where backup will be stored
+MBD="/var/mysqlbackups"
+
+HOST="$(hostname --fqdn)"
+
+NOW="$(date +"%Y-%m-%d-%H-%M")"
+
+# file to store current backup in
+FILE=""
+
+# list of databases
+DBS=""
+
+# DO NOT BACKUP these databases
+EXCLUDE="test information_schema performance_schema"
+
+[ ! -d "$MBD" ] && mkdir "$MBD" || :
+
+# delete old backups
+$PRIO find $MBD/ -name "*.sql.gz" -mtime +$DAYS -delete
+
+# accessible by root only
+chown 0.0 "$MBD"
+chmod 0700 "$MBD"
+
+# get all databases first
+DBS="$($PRIO mysql $MAUTH -Bse 'show databases')"
+
+# start backups
+for db in $DBS; do
+	skipdb=-1
+	if [ "$EXCLUDE" != "" ]; then
+		for i in $EXCLUDE; do
+			[ "$db" = "$i" ] && skipdb=1 || :
+		done
+	fi
+
+	if [ "$skipdb" = "-1" ] ; then
+		FILE="$MBD/${NOW}_${HOST}_$db.sql.gz"
+		$PRIO mysqldump $MAUTH --opt --events "$db" | gzip -9 > "$FILE"
+		chmod 0600 "$FILE"
+	fi
+done
+
