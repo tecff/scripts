@@ -1,27 +1,10 @@
 #!/bin/bash
-# this script saves information about nodes from multiple sources to files
-# sources:
-# - B.A.T.M.A.N.
-# - A.L.F.R.E.D.
-# dependencies: batadv-vis, alfred-json, batctl, tecff-copy-data
+# this script saves information about nodes from B.A.T.M.A.N. to files
+# dependencies: batctl, tecff-copy-data
 
 OUTDIR="/var/local/tecff-raw"
 
-grepfilter () {
-		grep -v "invalid JSON object from"
-}
-
 [ -d $OUTDIR ] || mkdir $OUTDIR
-
-batadv-vis -f dot > $OUTDIR/batadv-vis_-f_dot
-batadv-vis -f json > $OUTDIR/batadv-vis_-f_json
-batadv-vis -f jsondoc > $OUTDIR/batadv-vis_-f_jsondoc
-
-alfred-json -r 158 -f json -z > $OUTDIR/alfred-json_-r_158_-f_json 2> >(grepfilter)
-alfred-json -r 159 -f json -z > $OUTDIR/alfred-json_-r_159_-f_json 2> >(grepfilter)
-alfred-json -r 160 -f json -z > $OUTDIR/alfred-json_-r_160_-f_json 2> >(grepfilter)
-alfred-json -r 190 -f json -z > $OUTDIR/alfred-json_-r_190_-f_json 2> >(grepfilter)
-alfred-json -r 191 -f json -z > $OUTDIR/alfred-json_-r_191_-f_json 2> >(grepfilter)
 
 batctl o > $OUTDIR/batctl_o
 batctl gwl  > $OUTDIR/batctl_gwl

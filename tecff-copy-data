@@ -1,14 +1,9 @@
 #!/bin/bash
-# this script copies information about nodes from a B.A.T.M.A.N. gateway server to a statistics-server and a webserver
+# this script copies information about nodes from a B.A.T.M.A.N. gateway server to a webserver
 # dependencies: openssh-client
 
 RHOST="web01.tecff.de"
-STATHOST="stat01.tecff.de"
 LDIR="/var/local"
 RDIR="/var/www/html"
 # copy to webserver
 scp -r $LDIR/tecff-raw/* root@$RHOST:$RDIR/data/
-scp -r $LDIR/tecff-data/* root@$RHOST:$RDIR/data/
-# copy to statserver
-scp -r $LDIR/tecff-data/nodes.json root@$STATHOST:$LDIR/tecff-data/
-ssh -T root@$STATHOST "chown -R nodes2graphite $LDIR/tecff-data"
