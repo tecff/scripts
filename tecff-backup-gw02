@@ -7,7 +7,7 @@ BUSR="b_freifunkaltdorf_gw02"
 BPATH="/data/duplicity"
 LOGPATH="/var/log/duplicity-gw02.log"
 
-for dir in /var/local/tecff-data /var/local/tecff-raw /var/lib/hopglass-server; do
+for dir in /var/local/tecff-raw /var/lib/hopglass-server; do
 	duplicity full --no-encryption $dir sftp://${BUSR}@${BSRV}/${BPATH}/$dir >> ${LOGPATH}
 	duplicity remove-older-than 4W --force sftp://${BUSR}@${BSRV}/${BPATH}/$dir >> ${LOGPATH}
 done
