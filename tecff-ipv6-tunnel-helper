@@ -15,7 +15,7 @@ SUBNETIP="$5"
 if [ "$1" == "up" ]; then
 	ip -6 addr add $SUBNETIP dev $BRIDGEIF
 	ip -6 route add unreachable default metric 2000 table 42
-	ip -6 route add default via $DEFGW table 42
+	ip -6 route add default via $DEFGW table 42 dev $TUNIF
 	ip -6 rule add iif $BRIDGEIF table 42
 	ip6tables -A FORWARD -i $TUNIF -o $BRIDGEIF -m comment --comment "000 Allow v6-tunnel to bridge forwarding" -j ACCEPT
 	ip6tables -A FORWARD -i $BRIDGEIF -o $TUNIF -m comment --comment "000 Allow bridge to v6-tunnel forwarding" -j ACCEPT
@@ -25,7 +25,7 @@ else
 	ip6tables -D FORWARD -i $TUNIF -o $BRIDGEIF -m comment --comment "000 Allow v6-tunnel to bridge forwarding" -j ACCEPT
 	ip6tables -D FORWARD -i $BRIDGEIF -o $TUNIF -m comment --comment "000 Allow bridge to v6-tunnel forwarding" -j ACCEPT
 	ip -6 rule del iif $BRIDGEIF table 42
-	ip -6 route del default via $DEFGW table 42
+	ip -6 route del default via $DEFGW table 42 dev $TUNIF
 	ip -6 route del unreachable default metric 2000 table 42
 	ip -6 addr del $SUBNETIP dev $BRIDGEIF
 fi
