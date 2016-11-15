@@ -13,7 +13,5 @@ batctl tl > $OUTDIR/batctl_tl
 #batctl tg > $OUTDIR/batctl_tg
 batctl s > $OUTDIR/batctl_s
 
-# wait for ffmap-backend
-sleep 8
-
+# copy the data to other servers
 tecff-copy-data
