@@ -1,9 +1,10 @@
 #!/bin/bash
 # this script copies gluon firmware images to their public distribution points
-# dependencies: lftp, rsync
+# dependencies: sshfs, rsync
 
 SRVFTP="ftp.freifunk-altdorf.de"
 SRVFTP_USR="21271-ffafw"
+SRVFTP_MNT="/mnt/fw1.tecff.de-sftp"
 SRVSSH="gw02.tecff.de"
 SRVSSH_USR="root"
 SRVSSH_PATH="/var/www/html/fw"
@@ -21,61 +22,51 @@ if [ -z "$BRANCH" ]; then
 	echo "the source directory doesn't seem to be correct, it has to contain either experimental or stable"
 	exit 1
 fi
-if [ ! -d "$SRC/factory" ] || [ ! -d "$SRC/sysupgrade" ]; then
-	echo "couldn't find either factory or sysupgrade subdirectories"
+if [ ! -d "$SRC/modules" ] || [ ! -d "$SRC/images/factory" ] || [ ! -d "$SRC/images/sysupgrade" ]; then
+	echo "couldn't find at least one of the necessary directories: modules, images/factory, images/sysupgrade"
 	exit 1
 fi
-if [ ! -f "$SRC/sysupgrade/${BRANCH}.manifest" ]; then
-	echo "manifest missing: $SRC/sysupgrade/${BRANCH}.manifest"
+if [ ! -f "$SRC/images/sysupgrade/${BRANCH}.manifest" ]; then
+	echo "manifest missing: $SRC/images/sysupgrade/${BRANCH}.manifest"
 	exit 1
 fi
-if [ "$BRANCH" == "experimental" ] && [ "$(tail -3 $SRC/sysupgrade/${BRANCH}.manifest | head -1)" != "---" ]; then
-	echo "can't find enough signatures on the manifest file: $SRC/sysupgrade/${BRANCH}.manifest"
+if [ "$BRANCH" == "experimental" ] && [ "$(tail -3 $SRC/images/sysupgrade/${BRANCH}.manifest | head -1)" != "---" ]; then
+	echo "can't find enough signatures on the manifest file: $SRC/images/sysupgrade/${BRANCH}.manifest"
 	exit 1
 fi
-if [ "$BRANCH" == "stable" ] && [ "$(tail -4 $SRC/sysupgrade/${BRANCH}.manifest | head -1)" != "---" ]; then
-	echo "can't find enough signatures on the manifest file: $SRC/sysupgrade/${BRANCH}.manifest"
+if [ "$BRANCH" == "stable" ] && [ "$(tail -4 $SRC/images/sysupgrade/${BRANCH}.manifest | head -1)" != "---" ]; then
+	echo "can't find enough signatures on the manifest file: $SRC/images/sysupgrade/${BRANCH}.manifest"
 	exit 1
 fi
 
-# prompt for FTP password
-read -p "Please enter the FTP password for user $SRVFTP_USR on server ${SRVFTP}: " SRVFTP_PW
+# prompt for SFTP password
+read -p "Please enter the password for sftp user $SRVFTP_USR on server ${SRVFTP}: " SRVFTP_PW
 if [ -z "$SRVFTP_PW" ]; then
-	echo "you haven't specified a ftp password"
+	echo "you haven't specified a password"
 	exit 1
 fi
 
-echo "are you sure you backed up the old firmware on the update servers?"
+echo "are you sure you backed up the old $BRANCH firmware on the update servers?"
 echo "it will be overwritten if you dont interrupt now!"
 sleep 5
 
-# ftp copy
-echo "starting ftp copy..."
-cd $SRC
-lftp -u $SRVFTP_USR,$SRVFTP_PW ftp://$SRVFTP <<EOF
-set ssl:verify-certificate no
-set ftp:ssl-force true
-set ftp:ssl-protect-data true
-lcd factory
-cd $BRANCH
-rm -r factory
-mkdir factory
-chmod 0750 factory
-cd factory
-mput *
-lcd ../sysupgrade
-cd ..
-rm -r sysupgrade
-mkdir sysupgrade
-chmod 0750 sysupgrade
-cd sysupgrade
-mput *
-exit
-EOF
-
 # ssh copy
 echo "starting ssh copy... (needs ssh agent redirection)"
-rsync -rltv --delete $SRC/factory/ $SRVSSH_USR@$SRVSSH:/$SRVSSH_PATH/$BRANCH/factory/
-rsync -rltv --delete $SRC/sysupgrade/ $SRVSSH_USR@$SRVSSH:/$SRVSSH_PATH/$BRANCH/sysupgrade/
+rsync -rltv --delete $SRC/images/factory/ $SRVSSH_USR@$SRVSSH:/$SRVSSH_PATH/$BRANCH/factory/
+rsync -rltv --delete $SRC/images/sysupgrade/ $SRVSSH_USR@$SRVSSH:/$SRVSSH_PATH/$BRANCH/sysupgrade/
+rsync -rltv $SRC/modules/ $SRVSSH_USR@$SRVSSH:/$SRVSSH_PATH/modules/
+
+# ftp copy
+echo "starting sftp copy..."
+[ ! -d "$SRVFTP_MNT" ] && mkdir $SRVFTP_MNT
+echo $SRVFTP_PW | sshfs -o password_stdin $SRVFTP_USR@$SRVFTP:/ $SRVFTP_MNT
+if [ ! -d "$SRVFTP_MNT/modules" ] || [ ! -d "$SRVFTP_MNT/$BRANCH" ]; then
+	echo "necessary files are missing on the sftp server, maybe it's the wrong server?"
+	exit 1
+fi
+rsync -rltv --delete $SRC/images/ $SRVFTP_MNT/$BRANCH/
+rsync -rltv $SRC/modules/ $SRVFTP_MNT/modules/
+echo "sftp copy finished, disconnecting/unmounting..."
+fusermount -u $SRVFTP_MNT
 
 echo "finished."
