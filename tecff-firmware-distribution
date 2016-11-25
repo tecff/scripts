@@ -26,16 +26,14 @@ if [ ! -d "$SRC/modules" ] || [ ! -d "$SRC/images/factory" ] || [ ! -d "$SRC/ima
 	echo "couldn't find at least one of the necessary directories: modules, images/factory, images/sysupgrade"
 	exit 1
 fi
-if [ ! -f "$SRC/images/sysupgrade/${BRANCH}.manifest" ]; then
-	echo "manifest missing: $SRC/images/sysupgrade/${BRANCH}.manifest"
+MANIFEST="$SRC/images/sysupgrade/${BRANCH}.manifest"
+if [ ! -f "$MANIFEST" ]; then
+	echo "manifest missing: $MANIFEST"
 	exit 1
 fi
-if [ "$BRANCH" == "experimental" ] && [ "$(tail -3 $SRC/images/sysupgrade/${BRANCH}.manifest | head -1)" != "---" ]; then
-	echo "can't find enough signatures on the manifest file: $SRC/images/sysupgrade/${BRANCH}.manifest"
-	exit 1
-fi
-if [ "$BRANCH" == "stable" ] && [ "$(tail -4 $SRC/images/sysupgrade/${BRANCH}.manifest | head -1)" != "---" ]; then
-	echo "can't find enough signatures on the manifest file: $SRC/images/sysupgrade/${BRANCH}.manifest"
+SIGCOUNT="$(sed -e '1,/^---/d' $MANIFEST | wc -l)"
+if ([ "$BRANCH" == "experimental" ] && [ "$SIGCOUNT" -lt 2 ]) || ([ "$BRANCH" == "stable" ] && [ "$SIGCOUNT" -lt 3 ]); then
+	echo "can't find enough signatures on the manifest file: $MANIFEST"
 	exit 1
 fi
 
