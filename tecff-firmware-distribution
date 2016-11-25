@@ -8,6 +8,10 @@ SRVFTP_MNT="/mnt/fw1.tecff.de-sftp"
 SRVSSH="gw02.tecff.de"
 SRVSSH_USR="root"
 SRVSSH_PATH="/var/www/html/fw"
+if [ ! -x "$(which sshfs)" ] || [ ! -x "$(which rsync)" ]; then
+	echo "one of the dependencies is missing!"
+	exit 1
+fi
 if [ ! "$#" -eq 1 ] || [ ! -d "$1" ]; then
 	echo "please specify the source directory as the first parameter"
 	exit 1
