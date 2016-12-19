@@ -9,7 +9,7 @@ PATH1="/var/lib/jenkins/jobs"
 PATH2="lastSuccessful/archive/output/images/sysupgrade"
 JOB_EXP="site-ffa-experimental"
 JOB_STAB="site-ffa-stable"
-SIGNSH_SRC="https://github.com/freifunk-gluon/gluon/blob/master/contrib/sign.sh"
+SIGNSH_SRC="https://raw.githubusercontent.com/freifunk-gluon/gluon/master/contrib/sign.sh"
 SIGNSH="/usr/local/bin/gluon-sign.sh"
 if [ ! -x "$SIGNSH" ]; then
 	echo "please make sure $SIGNSH exists and is executable."
