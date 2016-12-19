@@ -42,7 +42,7 @@ if ([ "$BRANCH" == "experimental" ] && [ "$SIGCOUNT" -lt 2 ]) || ([ "$BRANCH" ==
 fi
 
 # prompt for SFTP password
-read -p "Please enter the password for sftp user $SRVFTP_USR on server ${SRVFTP}: " SRVFTP_PW
+read -sp "Please enter the password for sftp user $SRVFTP_USR on server ${SRVFTP}: " SRVFTP_PW
 if [ -z "$SRVFTP_PW" ]; then
 	echo "you haven't specified a password"
 	exit 1
