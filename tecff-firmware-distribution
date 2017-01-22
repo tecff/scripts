@@ -58,7 +58,7 @@ rsync -rltv --delete $SRC/images/factory/ $SRVSSH_USR@$SRVSSH:/$SRVSSH_PATH/$BRA
 rsync -rltv --delete $SRC/images/sysupgrade/ $SRVSSH_USR@$SRVSSH:/$SRVSSH_PATH/$BRANCH/sysupgrade/
 rsync -rltv $SRC/modules/ $SRVSSH_USR@$SRVSSH:/$SRVSSH_PATH/modules/
 
-# ftp copy
+# sftp copy
 echo "starting sftp copy..."
 [ ! -d "$SRVFTP_MNT" ] && mkdir $SRVFTP_MNT
 echo $SRVFTP_PW | sshfs -o password_stdin $SRVFTP_USR@$SRVFTP:/ $SRVFTP_MNT
@@ -68,6 +68,7 @@ if [ ! -d "$SRVFTP_MNT/modules" ] || [ ! -d "$SRVFTP_MNT/$BRANCH" ]; then
 fi
 rsync -rltv --delete $SRC/images/ $SRVFTP_MNT/$BRANCH/
 rsync -rltv $SRC/modules/ $SRVFTP_MNT/modules/
+find $SRVFTP_MNT/modules/ -type d -exec chmod 755 {} \;
 echo "sftp copy finished, disconnecting/unmounting..."
 fusermount -u $SRVFTP_MNT
 
