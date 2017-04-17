@@ -7,6 +7,10 @@ BUSR="b_freifunkaltdorf_web01"
 BPATH="/data/duplicity"
 LOGPATH="/var/log/duplicity-web01.log"
 
+echo >> ${LOGPATH}
+echo "===============================================================" >> ${LOGPATH}
+echo "NEW BACKUP STARTS: $(date)" >> ${LOGPATH}
+
 for dir in /var/lib/grafana/grafana.db /home/php-privatebin /home/php-dokuwiki /home/php-website /var/mysqlbackups; do
 	duplicity full --no-encryption $dir sftp://${BUSR}@${BSRV}/${BPATH}/$dir >> ${LOGPATH}
 	duplicity remove-older-than 3M --force sftp://${BUSR}@${BSRV}/${BPATH}/$dir >> ${LOGPATH}

@@ -7,6 +7,10 @@ BUSR="b_freifunkaltdorf_stat01"
 BPATH="/data/duplicity"
 LOGPATH="/var/log/duplicity-stat01.log"
 
+echo >> ${LOGPATH}
+echo "===============================================================" >> ${LOGPATH}
+echo "NEW BACKUP STARTS: $(date)" >> ${LOGPATH}
+
 # /var/lib/graphite
 duplicity full --no-encryption /var/lib/graphite sftp://${BUSR}@${BSRV}/${BPATH}/graphite >> ${LOGPATH}
 duplicity remove-older-than 14D --force sftp://${BUSR}@${BSRV}/${BPATH}/graphite >> ${LOGPATH}
