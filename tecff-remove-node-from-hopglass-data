@@ -1,6 +1,6 @@
 #!/bin/bash
-# this script removes a node, identified by its nodeid, from hopglass raw data
-# dependencies: hopglass, jq
+# this script removes a node, identified by its nodeid, from hopglass-server raw data
+# dependencies: hopglass-server, jq
 
 if [ "$#" -ne 1 ]; then
 	echo "missing nodeid or too many arguments"
@@ -12,12 +12,17 @@ RAW="/var/lib/hopglass-server/raw.json"
 
 systemctl stop hopglass-server@default.service
 if [ "$?" -ne "0" ]; then
-	echo "problem with stopping hopglass"
+	echo "problem with stopping hopglass-server"
 	exit
 fi
 
 cp $RAW ${RAW}.$(date +%Y-%m-%d:%H:%M:%S)
-echo "created backup of $RAW"
+if [ "$?" -ne "0" ]; then
+	echo "problem with backup of $RAW"
+	exit
+else
+	echo "created backup of $RAW"
+fi
 
 jq -c --arg nodeid $NODEID 'with_entries(select(.key != $nodeid))' $RAW > ${RAW}.tmp
 if [ "$?" -ne "0" ]; then
@@ -26,8 +31,16 @@ if [ "$?" -ne "0" ]; then
 fi
 
 mv ${RAW}.tmp $RAW
+if [ "$?" -ne "0" ]; then
+	echo "problem with moving modified hopglass-server raw file"
+	exit
+fi
 
 systemctl start hopglass-server@default.service
+if [ "$?" -ne "0" ]; then
+	echo "problem with starting hopglass-server"
+	exit
+fi
 
 echo "removed $NODEID from $RAW successfully."
 
