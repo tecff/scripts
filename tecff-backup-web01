@@ -11,7 +11,7 @@ echo >> ${LOGPATH}
 echo "===============================================================" >> ${LOGPATH}
 echo "NEW BACKUP STARTS: $(date)" >> ${LOGPATH}
 
-for dir in /var/lib/grafana/grafana.db /home/php-privatebin /home/php-dokuwiki /home/php-website /var/mysqlbackups; do
+for dir in /var/lib/grafana/grafana.db /home/php-privatebin /home/php-dokuwiki; do
 	duplicity full --no-encryption $dir sftp://${BUSR}@${BSRV}/${BPATH}/$dir >> ${LOGPATH}
 	duplicity remove-older-than 3M --force sftp://${BUSR}@${BSRV}/${BPATH}/$dir >> ${LOGPATH}
 done
