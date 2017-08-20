@@ -1,0 +1,208 @@
+#!/bin/sh
+#
+# determines the maximum packet size of the current connection to a specific host
+# tested on Arch Linux (bash) and Gluon (busybox ash)
+#
+# based on script written by @pinguinpfleger (Kai Hauser) for Freifunk Suedpfalz
+# https://github.com/freifunk-suedpfalz/check_icmp_packetsize
+# license: GPLv3
+#
+
+if [ $# -eq 0 ]; then
+	echo "Usage: $(basename $0) [-v] <domain>"
+	exit
+fi
+
+checkMinPacketSize=1232
+checkMaxPacketSize=1500
+
+if [ "$1" = "-v" ]; then
+	verbose="1"
+	host="$2"
+else
+	verbose="0"
+	host="$1"
+fi
+
+if ! nslookup $host >/dev/null; then
+	echo "name resolution of $host failed."
+	exit
+fi
+
+if [ -e /lib/gluon/release ]; then
+	if ! batctl o|grep -q mesh-vpn; then
+		echo "This Gluon node has no VPN connection."
+		exit
+	fi
+	if ! test -x /bin/opkg; then
+		echo "This Gluon node doesn't have opkg. The necessary advanced ping utilities can't be installed."
+		exit
+	fi
+	for i in iputils-ping iputils-ping6; do
+		if ! opkg list-installed|grep -q $i; then
+			echo "This Gluon node doesn't have the necessary advanced ping utility yet. Please install it first:"
+			echo "> opkg update"
+			echo "> opkg install iputils-ping iputils-ping6"
+			exit
+		fi
+	done
+fi
+
+if ping 2>&1|grep -q interval; then
+	pingparams="-q -c 2 -W 1 -M do -i 0.2 -s"
+else
+	pingparams="-q -c 2 -W 1 -M do -s"
+fi
+ping4="ping"
+if command -v ping6 >/dev/null 2>&1; then
+	ping6="ping6"
+else
+	ping6="ping -6"
+	ping4="ping -4"
+fi
+
+mtu_check () {
+	# if IPv6 is checked and there is either no IPv6 default route or there is none via br-wan on a device running Gluon
+	if [ "$1" = "IPv6" ] && ([ "$(ip -6 route show default|grep -q default; echo $? )" != "0" ] || ([ -e /lib/gluon/release ] && [ $(ip -6 route show default|grep -q "default.*br-wan"; echo $? ) != "0" ])); then
+		echo "There's no IPv6 connection as there is now default route."
+		return
+	fi
+
+	if [ -e /lib/gluon/release ]; then
+		ipv4addr="$(ip -4 addr show dev br-wan scope global | grep inet | head -1 | awk '{ print $2 }' | cut -d"/" -f1)"
+		ping4cmd="${ping4} -I ${ipv4addr} ${pingparams}"
+		ipv6addr="$(ip -6 addr show dev br-wan scope global | grep inet6 | grep -v "inet6 fd" | head -1 | awk '{ print $2 }' | cut -d"/" -f1)"
+		ping6cmd="${ping6} -I ${ipv6addr} ${pingparams}"
+	else
+		ping4cmd="${ping4} ${pingparams}"
+		ping6cmd="${ping6} ${pingparams}"
+	fi
+
+	if [ ${verbose} -eq 1 ];then
+		echo "####################################################"
+		echo "Checking the smallest packet size ${checkMinPacketSize}"
+		echo "####################################################"
+		echo ""
+		echo "----------------------------------------------------------"
+	fi
+	if [ "$1" = "IPv6" ]; then
+		if [ ${verbose} -eq 1 ];then
+			${ping6cmd} ${checkMinPacketSize} ${host}
+		else
+			${ping6cmd} ${checkMinPacketSize} ${host} > /dev/null
+		fi
+	else
+		if [ ${verbose} -eq 1 ];then
+			${ping4cmd} ${checkMinPacketSize} ${host}
+		else
+			${ping4cmd} ${checkMinPacketSize} ${host} > /dev/null
+		fi
+	fi
+
+	if [ $? -ne 0 ]; then
+		echo "Smallest packet size ${checkMinPacketSize} is not usable."
+		return
+	fi
+	if [ ${verbose} -eq 1 ];then
+		echo "----------------------------------------------------------"
+		echo ""
+		echo ""
+	fi
+
+	if [ ${verbose} -eq 1 ];then
+		echo "####################################################"
+		echo "Checking the biggest packet size ${checkMaxPacketSize}"
+		echo "####################################################"
+		echo ""
+		echo "----------------------------------------------------------"
+	fi
+	if [ "$1" = "IPv6" ]; then
+		if [ ${verbose} -eq 1 ];then
+			${ping6cmd} ${checkMaxPacketSize} ${host}
+		else
+			${ping6cmd} ${checkMaxPacketSize} ${host} > /dev/null
+		fi
+	else
+		if [ ${verbose} -eq 1 ];then
+			${ping4cmd} ${checkMaxPacketSize} ${host}
+		else
+			${ping4cmd} ${checkMaxPacketSize} ${host} > /dev/null
+		fi
+	fi
+	if [ $? -eq 0 ]; then
+		echo "$1: packet size: ${checkMaxPacketSize}"
+		return
+	fi
+	if [ ${verbose} -eq 1 ];then
+		echo "----------------------------------------------------------"
+		echo ""
+		echo ""
+	fi
+
+	if [ ${verbose} -eq 1 ];then
+		echo "####################################################"
+		echo "determining packet size..."
+		echo "####################################################"
+		echo ""
+	fi
+	step=$(((${checkMaxPacketSize} - ${checkMinPacketSize}) / 2))
+	[ $((${step} % 2)) -eq 0 ] || step=$((${step} + 1)) #falls ungerade um 1 erhöhen
+
+	checkPacketSize=$((${checkMinPacketSize} + ${step}))
+
+	while [ ${step} -ge 1 ]; do
+		[ ${verbose} -eq 1 ] && echo "Step: $step"
+		[ ${verbose} -eq 1 ] && echo "checkPacketSize: ${checkPacketSize}"
+		step=$(($step / 2))
+		if [ ${step} -ne 1 ];then
+			[ $((${step} % 2)) -eq 0 ] || step=$((${step} + 1))
+		fi
+		if [ ${verbose} -eq 1 ];then
+			echo ""
+			echo ""
+			echo "----------------------------------------------------------"
+		fi
+		if [ "$1" = "IPv6" ]; then
+			if [ ${verbose} -eq 1 ];then
+				${ping6cmd} ${checkPacketSize} ${host}
+			else
+				${ping6cmd} ${checkPacketSize} ${host} > /dev/null
+			fi
+		else
+			if [ ${verbose} -eq 1 ];then
+				${ping4cmd} ${checkPacketSize} ${host}
+			else
+				${ping4cmd} ${checkPacketSize} ${host} > /dev/null
+			fi
+		fi
+		if [ $? -eq 0 ]; then #ping ging
+			if [ "$1" = "IPv6" ]; then
+				PacketSize=${checkPacketSize}
+			else
+				PacketSize=${checkPacketSize}
+			fi
+			checkPacketSize=$((${checkPacketSize} + ${step}))
+		else
+			checkPacketSize=$((${checkPacketSize} - ${step}))
+		fi
+		if [ ${checkPacketSize} -gt ${checkMaxPacketSize} ]; then
+			continue
+		fi
+		if [ ${checkPacketSize} -lt ${checkMinPacketSize} ]; then
+			continue
+		fi
+		if [ ${verbose} -eq 1 ];then
+			echo "----------------------------------------------------------"
+		fi
+	done
+
+	if [ ${PacketSize} -ne 0 ]; then
+		PacketSize=$((${PacketSize} + 8))
+		echo "$1: determined packet size: $PacketSize byte (+ Transport-IP-Header: IPv4: 20 byte | IPv6: 40 byte)"
+	else
+		echo "$1: could not determine a packet size."
+	fi
+}
+
+mtu_check IPv4
+mtu_check IPv6
