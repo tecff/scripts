@@ -1,0 +1,13 @@
+#!/bin/sh
+
+HOSTNAME="${COLLECTD_HOSTNAME:-$(hostname --fqdn)}"
+INTERVAL="${COLLECTD_INTERVAL:-60}"
+
+LEASEFILE="/var/lib/misc/dnsmasq.leases"
+MAXLEASES="$(grep dhcp-lease-max /etc/dnsmasq.conf | cut -d"=" -f2)"
+
+while sleep "$INTERVAL"; do
+	VALUE="$(cat ${LEASEFILE} | wc -l)"
+	echo "PUTVAL \"$HOSTNAME/exec-dnsmasq/gauge-dhcp-leases\" interval=$INTERVAL N:$VALUE"
+	echo "PUTVAL \"$HOSTNAME/exec-dnsmasq/gauge-dhcp-range\" interval=$INTERVAL N:$MAXLEASES"
+done
