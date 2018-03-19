@@ -1,0 +1,23 @@
+#!/bin/bash
+
+HOSTNAME="${COLLECTD_HOSTNAME:-$(hostname --fqdn)}"
+INTERVAL="${COLLECTD_INTERVAL:-60}"
+
+BATCTL="$(which batctl)"
+PERFVALLIST="neighbors originators translocal transglobal claimtable dat_cache transglobal-size"
+
+while sleep "$INTERVAL"; do
+	for METRIC in $PERFVALLIST; do
+		if [ "$METRIC" = "transglobal-size" ]; then
+			VALUE="$(sudo $BATCTL transglobal -H -n | wc -c)"
+		else
+			VALUE="$(sudo $BATCTL $METRIC -H -n | wc -l)"
+		fi
+		echo "PUTVAL \"$HOSTNAME/exec-batman-metrics/gauge-$METRIC\" interval=$INTERVAL N:$VALUE"
+	done
+	while read stat; do
+		METRIC="statistics_${stat%:*}"
+		VALUE="${stat#*:}"
+		echo "PUTVAL \"$HOSTNAME/exec-batman-metrics/gauge-$METRIC\" interval=$INTERVAL N:$VALUE"
+	done < <(sudo $BATCTL statistics | awk '{ print $1 $2 }')
+done
