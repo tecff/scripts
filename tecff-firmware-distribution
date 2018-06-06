@@ -25,8 +25,8 @@ if [ -z "$BRANCH" ]; then
 	echo "the source directory doesn't seem to be correct, it has to contain either experimental, beta or stable"
 	exit 1
 fi
-if [ ! -d "$SRC/modules" ] || [ ! -d "$SRC/images/factory" ] || [ ! -d "$SRC/images/sysupgrade" ]; then
-	echo "couldn't find at least one of the necessary directories: modules, images/factory, images/sysupgrade"
+if [ ! -d "$SRC/packages" ] || [ ! -d "$SRC/images/factory" ] || [ ! -d "$SRC/images/sysupgrade" ]; then
+	echo "couldn't find at least one of the necessary directories: packages, images/factory, images/sysupgrade"
 	exit 1
 fi
 MANIFEST="$SRC/images/sysupgrade/${BRANCH}.manifest"
@@ -50,6 +50,6 @@ sleep 5
 echo "starting ssh copy... (needs ssh agent redirection)"
 rsync -rltv --delete $SRC/images/factory/ $SRVSSH_USR@$SRVSSH:/$SRVSSH_PATH/$BRANCH/factory/
 rsync -rltv --delete $SRC/images/sysupgrade/ $SRVSSH_USR@$SRVSSH:/$SRVSSH_PATH/$BRANCH/sysupgrade/
-rsync -rltv $SRC/modules/ $SRVSSH_USR@$SRVSSH:/$SRVSSH_PATH/modules/
+rsync -rltv $SRC/packages/ $SRVSSH_USR@$SRVSSH:/$SRVSSH_PATH/modules/
 
 echo "finished."
