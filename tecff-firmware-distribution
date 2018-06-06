@@ -4,7 +4,8 @@
 
 SRVSSH="gw02.tecff.de"
 SRVSSH_USR="root"
-SRVSSH_PATH="/var/www/html/fw/v5"
+SRVSSH_PATH="/var/www/html/fw"
+SRVSSH_DIR="v5"
 if [ ! -x "$(which rsync)" ]; then
 	echo "one of the dependencies is missing!"
 	exit 1
@@ -48,8 +49,8 @@ sleep 5
 
 # ssh copy
 echo "starting ssh copy... (needs ssh agent redirection)"
-rsync -rltv --delete $SRC/images/factory/ $SRVSSH_USR@$SRVSSH:/$SRVSSH_PATH/$BRANCH/factory/
-rsync -rltv --delete $SRC/images/sysupgrade/ $SRVSSH_USR@$SRVSSH:/$SRVSSH_PATH/$BRANCH/sysupgrade/
+rsync -rltv --delete $SRC/images/factory/ $SRVSSH_USR@$SRVSSH:/$SRVSSH_PATH/$SRVSSH_DIR/$BRANCH/factory/
+rsync -rltv --delete $SRC/images/sysupgrade/ $SRVSSH_USR@$SRVSSH:/$SRVSSH_PATH/$SRVSSH_DIR/$BRANCH/sysupgrade/
 rsync -rltv $SRC/packages/ $SRVSSH_USR@$SRVSSH:/$SRVSSH_PATH/modules/
 
 echo "finished."
