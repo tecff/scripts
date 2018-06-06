@@ -4,7 +4,7 @@
 
 SRVSSH="gw02.tecff.de"
 SRVSSH_USR="root"
-SRVSSH_PATH="/var/www/html/fw"
+SRVSSH_PATH="/var/www/html/fw/v5"
 if [ ! -x "$(which rsync)" ]; then
 	echo "one of the dependencies is missing!"
 	exit 1
@@ -14,13 +14,15 @@ if [ ! "$#" -eq 1 ] || [ ! -d "$1" ]; then
 	exit 1
 fi
 SRC="$1"
-if [[ "$SRC" =~ ^.+xperimental.+$ ]]; then
+if [[ "$SRC" =~ ^.+experimental.+$ ]]; then
 	BRANCH="experimental"
-elif [[ "$SRC" =~ ^.+table.+$ ]]; then
+elif [[ "$SRC" =~ ^.+beta.+$ ]]; then
+	BRANCH="beta"
+elif [[ "$SRC" =~ ^.+stable.+$ ]]; then
 	BRANCH="stable"
 fi
 if [ -z "$BRANCH" ]; then
-	echo "the source directory doesn't seem to be correct, it has to contain either experimental or stable"
+	echo "the source directory doesn't seem to be correct, it has to contain either experimental, beta or stable"
 	exit 1
 fi
 if [ ! -d "$SRC/modules" ] || [ ! -d "$SRC/images/factory" ] || [ ! -d "$SRC/images/sysupgrade" ]; then
@@ -33,7 +35,9 @@ if [ ! -f "$MANIFEST" ]; then
 	exit 1
 fi
 SIGCOUNT="$(sed -e '1,/^---/d' $MANIFEST | wc -l)"
-if ([ "$BRANCH" == "experimental" ] && [ "$SIGCOUNT" -lt 2 ]) || ([ "$BRANCH" == "stable" ] && [ "$SIGCOUNT" -lt 3 ]); then
+if ([ "$BRANCH" == "experimental" ] && [ "$SIGCOUNT" -lt 1 ]) || \
+		([ "$BRANCH" == "beta" ]    && [ "$SIGCOUNT" -lt 2 ]) || \
+		([ "$BRANCH" == "stable" ]  && [ "$SIGCOUNT" -lt 3 ]); then
 	echo "can't find enough signatures on the manifest file: $MANIFEST"
 	exit 1
 fi
