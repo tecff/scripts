@@ -1,13 +1,13 @@
 #!/bin/bash
-if [ "$1" != "stable" ] && [ "$1" != "experimental" ]; then
-	echo "please supply branch (experimental|stable) as a parameter"
+if [ "$1" != "stable" ] && [ "$1" != "beta" ]; then
+	echo "please supply branch (beta|stable) as a parameter"
 	exit 1
 fi
 BUILD_SRV="root@host02.tecff.de"
 LPATH="$(mktemp)"
 PATH1="/var/lib/jenkins/jobs"
 PATH2="lastSuccessful/archive/output/images/sysupgrade"
-JOB_EXP="site-ffa-experimental"
+JOB_BETA="site-ffa-beta"
 JOB_STAB="site-ffa-stable"
 SIGNSH_SRC="https://raw.githubusercontent.com/freifunk-gluon/gluon/master/contrib/sign.sh"
 SIGNSH="/usr/local/bin/gluon-sign.sh"
@@ -18,8 +18,8 @@ if [ ! -x "$SIGNSH" ]; then
 	exit 1
 fi
 echo "make sure you have installed ecdsautil/ecdsasign as it is needed by $SIGNSH !"
-if [ "$1" = "experimental" ]; then
-	RPATH="$PATH1/$JOB_EXP/$PATH2/experimental.manifest"
+if [ "$1" = "beta" ]; then
+	RPATH="$PATH1/$JOB_BETA/$PATH2/beta.manifest"
 else
 	RPATH="$PATH1/$JOB_STAB/$PATH2/stable.manifest"
 fi
