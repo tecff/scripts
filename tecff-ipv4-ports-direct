@@ -13,6 +13,13 @@ PUBV4="$4"
 PUBV4_EXT="$5"
 TCPPORTS="25,80,110,143,443,465,554,587,993,995,1194,1293,1935"
 UDPPORTS="443,500,554,1194,1293,1935,4500"
+# port explanation:
+# 80,443:          http(s), quic
+# 25,465,587:      smtp(s), submission
+# 110,143,993,995: pop3(s), imap(s)
+# 500,1293,4500:   IPSec VPN
+# 1194:            SSL-VPN
+# 554,1935:        rtsp, rtmp
 
 if [ "$1" == "up" ]; then
 	iptables -t mangle -N DIRECT
