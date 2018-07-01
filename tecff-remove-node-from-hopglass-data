@@ -7,7 +7,8 @@ if [ "$#" -ne 1 ]; then
 	exit
 fi
 
-NODEID="$1"
+NODEID="${1//:}"
+
 RAW="/var/lib/hopglass-server/raw.json"
 
 systemctl stop hopglass-server@default.service
