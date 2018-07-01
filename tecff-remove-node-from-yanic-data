@@ -1,0 +1,47 @@
+#!/bin/bash
+# this script removes a node (identified by the node's id or MAC) from yanic's state data
+# dependencies: yanic, jq
+
+if [ "$#" -ne 1 ]; then
+	echo "missing nodeid or too many arguments"
+	exit
+fi
+
+NODEID="${1//:}"
+
+RAW="/var/lib/yanic/state/state.json"
+
+systemctl stop yanic.service
+if [ "$?" -ne "0" ]; then
+	echo "problem with stopping yanic"
+	exit
+fi
+
+cp $RAW ${RAW}.$(date +%Y-%m-%d:%H:%M:%S)
+if [ "$?" -ne "0" ]; then
+	echo "problem with backup of $RAW"
+	exit
+else
+	echo "created backup of $RAW"
+fi
+
+jq -c --arg nodeid $NODEID '.nodes | del(.[$nodeid]) | { nodes: . }' $RAW > ${RAW}.tmp
+if [ "$?" -ne "0" ]; then
+	echo "problem with jq processing"
+	exit
+fi
+
+mv ${RAW}.tmp $RAW
+if [ "$?" -ne "0" ]; then
+	echo "problem with moving modified state file"
+	exit
+fi
+
+systemctl start yanic.service
+if [ "$?" -ne "0" ]; then
+	echo "problem with starting yanic"
+	exit
+fi
+
+echo "removed $NODEID from $RAW successfully."
+
