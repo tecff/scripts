@@ -11,7 +11,7 @@ echo >> ${LOGPATH}
 echo "===============================================================" >> ${LOGPATH}
 echo "NEW BACKUP STARTS: $(date)" >> ${LOGPATH}
 
-for dir in /var/local/tecff-raw /var/lib/hopglass-server; do
+for dir in /var/local/tecff-raw /var/lib/yanic; do
 	duplicity full --no-encryption $dir sftp://${BUSR}@${BSRV}/${BPATH}/$dir >> ${LOGPATH}
 	duplicity remove-older-than 4W --force sftp://${BUSR}@${BSRV}/${BPATH}/$dir >> ${LOGPATH}
 done
