@@ -51,6 +51,9 @@ sleep 5
 echo "starting ssh copy... (needs ssh agent redirection)"
 rsync -rltv --delete $SRC/images/factory/ $SRVSSH_USR@$SRVSSH:/$SRVSSH_PATH/$SRVSSH_DIR/$BRANCH/factory/
 rsync -rltv --delete $SRC/images/sysupgrade/ $SRVSSH_USR@$SRVSSH:/$SRVSSH_PATH/$SRVSSH_DIR/$BRANCH/sysupgrade/
+if [ -d "$SRC/images/other/" ]; then
+	rsync -rltv --delete $SRC/images/other/ $SRVSSH_USR@$SRVSSH:/$SRVSSH_PATH/$SRVSSH_DIR/$BRANCH/other/
+fi
 rsync -rltv $SRC/packages/ $SRVSSH_USR@$SRVSSH:/$SRVSSH_PATH/modules/
 
 echo "finished."
