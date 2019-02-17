@@ -2,8 +2,8 @@
 
 PACKAGE="batman-adv"
 REMOTE="git://git.open-mesh.org/batman-adv.git"
-TAG="v2018.4"
-KMOD_VERSION="2018.4"
+TAG="v2019.0"
+KMOD_VERSION="2019.0"
 PKG_RELEASE="1"
 BUILD_ROOT="/usr/src/batman-adv"
 MAINTAINER="rotanid"
@@ -15,7 +15,7 @@ PKGDESC="B.A.T.M.A.N. advanced external module"
 RUNNING_KERNEL_REL=$(uname -r)
 
 
-if [[ "$RUNNING_KERNEL_REL" = "4.18.0-0.bpo"* ]]; then
+if [[ "$RUNNING_KERNEL_REL" = "4.19.0-0.bpo"* ]]; then
 	# stretch-backports
 	REQUIRED_KERNEL=$(dpkg -l | grep "linux-image.*bpo" | grep -v meta | tail -1 | awk '{ print $2 }')
 	TARGET_KERNEL=$(echo $REQUIRED_KERNEL | sed "s/linux-image-//")
