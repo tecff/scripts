@@ -12,7 +12,7 @@ PKGGROUP="net"
 PKGALTSRC="https://git.open-mesh.org/batctl.git"
 PKGDESC="B.A.T.M.A.N. advanced control and management tool"
 
-REQUIRES="libnl-genl-3-200"
+REQUIRES="libc6 \(\>= 2.15\),libnl-genl-3-200 \(\>= 3.2.7\)"
 
 check() {
 	REQUIRED=0
@@ -26,7 +26,6 @@ check() {
 	fi
 
 	exit $REQUIRED
-
 }
 
 prepare() {
