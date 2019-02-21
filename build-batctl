@@ -4,8 +4,8 @@ PACKAGE="batctl"
 REMOTE="git://git.open-mesh.org/batctl.git"
 TAG="v2019.0"
 TARGET_VERSION="2019.0"
+PKG_RELEASE_PREFIX="0~tecff"
 PKG_RELEASE="1"
-BUILD_ROOT="/usr/src/batctl"
 MAINTAINER="rotanid"
 PKGLICENSE="GPL2"
 PKGGROUP="net"
@@ -13,6 +13,19 @@ PKGALTSRC="https://git.open-mesh.org/batctl.git"
 PKGDESC="B.A.T.M.A.N. advanced control and management tool"
 
 REQUIRES="libc6 \(\>= 2.15\),libnl-genl-3-200 \(\>= 3.2.7\)"
+
+BUILD_ROOT="/usr/src/batctl"
+
+if grep -q "^8" /etc/debian_version; then
+	# Debian Jessie
+	PKG_RELEASE="${PKG_RELEASE_PREFIX}~deb8u${PKG_RELEASE}"
+elif grep -q "^9" /etc/debian_version; then
+	# Debian Stretch
+	PKG_RELEASE="${PKG_RELEASE_PREFIX}~deb9u${PKG_RELEASE}"
+else
+	echo "the currently running Debian version is not supported yet by this build script."
+	exit 1
+fi
 
 check() {
 	REQUIRED=0
