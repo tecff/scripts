@@ -14,7 +14,8 @@ PKGDESC="B.A.T.M.A.N. advanced control and management tool"
 
 REQUIRES="libc6 \(\>= 2.15\),libnl-genl-3-200 \(\>= 3.2.7\)"
 
-BUILD_ROOT="/usr/src/batctl"
+BUILD_ROOT="/tmp/batctl-source"
+INSTALL_PREFIX="/usr"
 
 if grep -q "^8" /etc/debian_version; then
 	# Debian Jessie
@@ -61,7 +62,7 @@ build() {
 install() {
 	cd $BUILD_ROOT
 	echo ${PKGDESC} > description-pak
-	checkinstall -y --nodoc \
+	fakeroot checkinstall -y --nodoc \
 		--pkgname "${PACKAGE}" \
 		--pkgversion "${TARGET_VERSION}" \
 		--pkgrelease "${PKG_RELEASE}" \
@@ -71,7 +72,9 @@ install() {
 		--pkggroup "${PKGGROUP}" \
 		--maintainer "${MAINTAINER}" \
 		--requires "${REQUIRES}" \
-		--fstrans=no
+		--fstrans=yes \
+		--install=no \
+	make install PREFIX="${INSTALL_PREFIX}"
 }
 
 if [ "$1" = "check" ]; then
