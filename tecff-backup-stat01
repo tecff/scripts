@@ -2,7 +2,7 @@
 # this script backs up important data on tecff server stat01
 # dependencies: duplicity
 
-BSRV="backup0.nlams0.conemu.net"
+BSRV="backup0.denue0.conemu.net"
 BUSR="b_freifunkaltdorf_stat01"
 BPATH="/data/duplicity"
 LOGPATH="/var/log/duplicity-stat01.log"

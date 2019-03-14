@@ -2,7 +2,7 @@
 # this script backs up important data on tecff server gw02 
 # dependencies: duplicity
 
-BSRV="backup0.nlams0.conemu.net"
+BSRV="backup0.denue0.conemu.net"
 BUSR="b_freifunkaltdorf_gw02"
 BPATH="/data/duplicity"
 LOGPATH="/var/log/duplicity-gw02.log"
