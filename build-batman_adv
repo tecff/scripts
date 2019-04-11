@@ -32,7 +32,7 @@ elif [[ "$RUNNING_KERNEL_REL" = "3.16.0"* ]]; then
 	REQUIRED_KERNEL=$(dpkg -s linux-image-amd64 | grep "^Depends" | sed 's/Depends:\s*//')
 	TARGET_KERNEL=$(echo $REQUIRED_KERNEL | sed 's/linux-image-//')
 else
-	echo "this kernel version ( $RUNNING_KERNEL_REL ) is not supported yet by this build script."
+	echo "the currently running kernel version ( $RUNNING_KERNEL_REL ) is not supported yet by this build script."
 	exit 1
 fi
 REQUIRES="${REQUIRED_KERNEL}"
