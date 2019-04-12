@@ -17,14 +17,15 @@ REQUIRES="libc6 \(\>= 2.15\),libnl-genl-3-200 \(\>= 3.2.7\)"
 BUILD_ROOT="/tmp/batctl-source"
 INSTALL_PREFIX="/usr"
 
-if grep -q "^8" /etc/debian_version; then
+DEBIAN_VERSION="$(< /etc/debian_version)"
+if [[ "$DEBIAN_VERSION" = "8"* ]]; then
 	# Debian Jessie
 	PKG_RELEASE="${PKG_RELEASE_PREFIX}~deb8u${PKG_RELEASE}"
-elif grep -q "^9" /etc/debian_version; then
+elif [[ "$DEBIAN_VERSION" = "9"* ]]; then
 	# Debian Stretch
 	PKG_RELEASE="${PKG_RELEASE_PREFIX}~deb9u${PKG_RELEASE}"
 else
-	echo "the currently running Debian version is not supported yet by this build script."
+	echo "the currently running Debian version ( $DEBIAN_VERSION ) is not supported yet by this build script."
 	exit 1
 fi
 
