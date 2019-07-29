@@ -1,0 +1,14 @@
+#!/bin/bash
+
+
+case "$1" in
+	ip4-all-neighbors)	ip -4 neighbor ;;
+	ip4-10120-neighbors)	ip -4 neighbor | grep "^10.120." ;;
+	ip4-other-neighbors)	ip -4 neighbor | grep -v "^10.120." ;;
+	ip6-all-neighbors)	ip -6 neighbor ;;
+	ip6-ll-neighbors)	ip -6 neighbor | grep "^fe80::" ;;
+	ip6-tecff-ula-neighbors)	ip -6 neighbor | grep "^fdef:ffc0:4ffa:" ;;
+	ip6-tecff-public-neighbors)	ip -6 neighbor | grep "^2001:470:733f:" ;;
+	ip6-other-neighbors)	ip -6 neighbor | grep -Ev "^(fe80:|fdef:ffc0:4ffa|2001:470:733f):" ;;
+	*)	echo "Usage $0 [ip4-all-neighbors ip4-10120-neighbors ip4-other-neighbors ip6-all-neighbors ip6-ll-neighbors ip6-tecff-ula-neighbors ip6-tecff-public-neighbors ip6-other-neighbors]"
+esac

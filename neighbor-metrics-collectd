@@ -1,0 +1,14 @@
+#!/bin/bash
+
+HOSTNAME="${COLLECTD_HOSTNAME:-$(hostname --fqdn)}"
+INTERVAL="${COLLECTD_INTERVAL:-60}"
+
+IP="/usr/local/sbin/ip-wrapper"
+PERFVALLIST="ip4-all-neighbors ip4-10120-neighbors ip4-other-neighbors ip6-all-neighbors ip6-ll-neighbors ip6-tecff-ula-neighbors ip6-tecff-public-neighbors ip6-other-neighbors"
+
+while sleep "$INTERVAL"; do
+	for METRIC in $PERFVALLIST; do
+		VALUE="$(sudo $IP $METRIC | wc -l)"
+		echo "PUTVAL \"$HOSTNAME/exec-neighbor-metrics/gauge-$METRIC\" interval=$INTERVAL N:$VALUE"
+	done
+done
