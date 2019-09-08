@@ -2,8 +2,8 @@
 
 PACKAGE="batctl"
 REMOTE="git://git.open-mesh.org/batctl.git"
-TAG="v2019.2"
-TARGET_VERSION="2019.2"
+TAG="v2019.3"
+TARGET_VERSION="2019.3"
 PKG_RELEASE_PREFIX="0~tecff"
 PKG_RELEASE="1"
 MAINTAINER="rotanid"
