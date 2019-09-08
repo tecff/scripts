@@ -24,6 +24,9 @@ if [[ "$DEBIAN_VERSION" = "8"* ]]; then
 elif [[ "$DEBIAN_VERSION" = "9"* ]]; then
 	# Debian Stretch
 	PKG_RELEASE="${PKG_RELEASE_PREFIX}~deb9u${PKG_RELEASE}"
+elif [[ "$DEBIAN_VERSION" = "10"* ]]; then
+	# Debian Buster
+	PKG_RELEASE="${PKG_RELEASE_PREFIX}~deb10u${PKG_RELEASE}"
 else
 	echo "the currently running Debian version ( $DEBIAN_VERSION ) is not supported yet by this build script."
 	exit 1
