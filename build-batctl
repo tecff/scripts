@@ -17,8 +17,14 @@ REQUIRES="libc6 \(\>= 2.15\),libnl-genl-3-200 \(\>= 3.2.7\)"
 BUILD_ROOT="/tmp/batctl-source"
 INSTALL_PREFIX="/usr"
 
-DEBIAN_VERSION="$(< /etc/debian_version)"
-if [[ "$DEBIAN_VERSION" = "8"* ]]; then
+RUNNING_DISTRO_VERSION="$(lsb_release -r -s)"
+if [[ "$RUNNING_DISTRO_VERSION" = "16.04"* ]]; then
+	# Ubuntu Xenial
+	PKG_RELEASE="${PKG_RELEASE_PREFIX}~ubuntu0.16.04u${PKG_RELEASE}"
+elif [[ "$RUNNING_DISTRO_VERSION" = "18.04"* ]]; then
+	# Ubuntu Bionic
+	PKG_RELEASE="${PKG_RELEASE_PREFIX}~ubuntu0.18.04u${PKG_RELEASE}"
+elif [[ "$DEBIAN_VERSION" = "8"* ]]; then
 	# Debian Jessie
 	PKG_RELEASE="${PKG_RELEASE_PREFIX}~deb8u${PKG_RELEASE}"
 elif [[ "$DEBIAN_VERSION" = "9"* ]]; then

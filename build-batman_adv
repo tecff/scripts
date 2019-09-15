@@ -13,39 +13,57 @@ PKGGROUP="net"
 PKGALTSRC="https://git.open-mesh.org/batman-adv.git"
 PKGDESC="B.A.T.M.A.N. advanced external module"
 
+RUNNING_DISTRO="$(lsb_release -s -i)"
+RUNNING_DISTRO_VERSION="$(lsb_release -r -s)"
 RUNNING_KERNEL_REL=$(uname -r)
-if [[ "$RUNNING_KERNEL_REL" = "4.19.0-0.bpo"* ]]; then
-	# stretch-backports
-	REQUIRED_KERNEL=$(dpkg -l | grep "linux-image.*bpo" | grep -v meta | tail -1 | awk '{ print $2 }')
-	TARGET_KERNEL=$(echo $REQUIRED_KERNEL | sed "s/linux-image-//")
-	PKG_RELEASE="${PKG_RELEASE}.bpo.1"
-elif [[ "$RUNNING_KERNEL_REL" = "4.9.0-0.bpo"* ]]; then
-	# jessie-backports
-	REQUIRED_KERNEL=$(dpkg -s linux-image-4.9-amd64 | grep "^Depends" | sed 's/Depends:\s*//')
-	TARGET_KERNEL=$(echo $REQUIRED_KERNEL | sed 's/linux-image-//')
-	PKG_RELEASE="${PKG_RELEASE}.bpo.1"
-elif [[ "$RUNNING_KERNEL_REL" = "4.19.0"* ]] || [[ "$RUNNING_KERNEL_REL" = "4.9.0"* ]] || [[ "$RUNNING_KERNEL_REL" = "3.16.0"* ]]; then
-	# buster, stretch, jessie
-	REQUIRED_KERNEL=$(dpkg -s linux-image-amd64 | grep "^Depends" | sed 's/Depends:\s*//')
-	TARGET_KERNEL=$(echo $REQUIRED_KERNEL | sed "s/linux-image-//")
+if [[ "$RUNNING_DISTRO" = "Debian" ]]; then
+	if [[ "$RUNNING_KERNEL_REL" = "4.19.0-0.bpo"* ]]; then
+		# stretch-backports
+		REQUIRED_KERNEL=$(dpkg -l | grep "linux-image.*bpo" | grep -v meta | tail -1 | awk '{ print $2 }')
+		TARGET_KERNEL=$(echo $REQUIRED_KERNEL | sed "s/linux-image-//")
+		PKG_RELEASE="${PKG_RELEASE}.bpo.1"
+	elif [[ "$RUNNING_KERNEL_REL" = "4.9.0-0.bpo"* ]]; then
+		# jessie-backports
+		REQUIRED_KERNEL=$(dpkg -s linux-image-4.9-amd64 | grep "^Depends" | sed 's/Depends:\s*//')
+		TARGET_KERNEL=$(echo $REQUIRED_KERNEL | sed 's/linux-image-//')
+		PKG_RELEASE="${PKG_RELEASE}.bpo.1"
+	elif [[ "$RUNNING_KERNEL_REL" = "4.19.0"* ]] || [[ "$RUNNING_KERNEL_REL" = "4.9.0"* ]] || [[ "$RUNNING_KERNEL_REL" = "3.16.0"* ]]; then
+		# buster, stretch, jessie
+		REQUIRED_KERNEL=$(dpkg -s linux-image-amd64 | grep "^Depends" | sed 's/Depends:\s*//')
+		TARGET_KERNEL=$(echo $REQUIRED_KERNEL | sed "s/linux-image-//")
+	else
+		echo "the currently running kernel version ( $RUNNING_KERNEL_REL ) is not supported yet by this build script."
+		exit 1
+	fi
+elif [[ "$RUNNING_DISTRO" = "Ubuntu" ]]; then
+	TARGET_KERNEL="$RUNNING_KERNEL_REL"
+	REQUIRED_KERNEL="linux-image-${RUNNING_KERNEL_REL}"
+	if [[ "$(dpkg -l | grep linux-generic-hwe | wc -l)" -gt 0 ]]; then
+		PKG_RELEASE="${PKG_RELEASE}.hwe.1"
+	fi
 else
-	echo "the currently running kernel version ( $RUNNING_KERNEL_REL ) is not supported yet by this build script."
+	echo "the running distro is not supported."
 	exit 1
 fi
 REQUIRES="${REQUIRED_KERNEL}"
 
-DEBIAN_VERSION="$(< /etc/debian_version)"
-if [[ "$DEBIAN_VERSION" = "8"* ]]; then
+if [[ "$RUNNING_DISTRO_VERSION" = "16.04"* ]]; then
+	# Ubuntu Xenial
+	PKG_RELEASE="${PKG_RELEASE_PREFIX}~ubuntu0.16.04u${PKG_RELEASE}"
+elif [[ "$RUNNING_DISTRO_VERSION" = "18.04"* ]]; then
+	# Ubuntu Bionic
+	PKG_RELEASE="${PKG_RELEASE_PREFIX}~ubuntu0.18.04u${PKG_RELEASE}"
+elif [[ "$RUNNING_DISTRO_VERSION" = "8"* ]]; then
 	# Debian Jessie
 	PKG_RELEASE="${PKG_RELEASE_PREFIX}~deb8u${PKG_RELEASE}"
-elif [[ "$DEBIAN_VERSION" = "9"* ]]; then
+elif [[ "$RUNNING_DISTRO_VERSION" = "9"* ]]; then
 	# Debian Stretch
 	PKG_RELEASE="${PKG_RELEASE_PREFIX}~deb9u${PKG_RELEASE}"
-elif [[ "$DEBIAN_VERSION" = "10"* ]]; then
+elif [[ "$RUNNING_DISTRO_VERSION" = "10"* ]]; then
 	# Debian Buster
 	PKG_RELEASE="${PKG_RELEASE_PREFIX}~deb10u${PKG_RELEASE}"
 else
-	echo "the currently running Debian version ( $DEBIAN_VERSION ) is not supported yet by this build script."
+	echo "the currently running Debian version ( $RUNNING_DISTRO_VERSION ) is not supported yet by this build script."
 	exit 1
 fi
 
