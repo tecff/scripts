@@ -5,7 +5,7 @@
 SRVSSH="gw02.tecff.de"
 SRVSSH_USR="root"
 SRVSSH_PATH="/var/www/html/fw"
-SRVSSH_DIR="v5"
+SRVSSH_DIR="v7"
 if [ ! -x "$(which rsync)" ]; then
 	echo "one of the dependencies is missing!"
 	exit 1
