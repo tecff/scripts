@@ -43,6 +43,7 @@ if ([ "$BRANCH" == "experimental" ] && [ "$SIGCOUNT" -lt 1 ]) || \
 	exit 1
 fi
 
+echo "copy will be done to: $SRVSSH_USR@$SRVSSH:/$SRVSSH_PATH/$SRVSSH_DIR/$BRANCH/"
 echo "are you sure you backed up the old $BRANCH firmware on the update servers?"
 echo "it will be overwritten if you dont interrupt now!"
 sleep 5
