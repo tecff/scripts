@@ -17,6 +17,7 @@ REQUIRES="libc6 \(\>= 2.15\),libnl-genl-3-200 \(\>= 3.2.7\)"
 BUILD_ROOT="/tmp/batctl-source"
 INSTALL_PREFIX="/usr"
 
+RUNNING_DISTRO="$(lsb_release -s -i)"
 RUNNING_DISTRO_VERSION="$(lsb_release -r -s)"
 if [[ "$RUNNING_DISTRO_VERSION" = "16.04"* ]]; then
 	# Ubuntu Xenial
@@ -24,17 +25,17 @@ if [[ "$RUNNING_DISTRO_VERSION" = "16.04"* ]]; then
 elif [[ "$RUNNING_DISTRO_VERSION" = "18.04"* ]]; then
 	# Ubuntu Bionic
 	PKG_RELEASE="${PKG_RELEASE_PREFIX}~ubuntu0.18.04u${PKG_RELEASE}"
-elif [[ "$DEBIAN_VERSION" = "8"* ]]; then
+elif [[ "$RUNNING_DISTRO_VERSION" = "8"* ]]; then
 	# Debian Jessie
 	PKG_RELEASE="${PKG_RELEASE_PREFIX}~deb8u${PKG_RELEASE}"
-elif [[ "$DEBIAN_VERSION" = "9"* ]]; then
+elif [[ "$RUNNING_DISTRO_VERSION" = "9"* ]]; then
 	# Debian Stretch
 	PKG_RELEASE="${PKG_RELEASE_PREFIX}~deb9u${PKG_RELEASE}"
-elif [[ "$DEBIAN_VERSION" = "10"* ]]; then
+elif [[ "$RUNNING_DISTRO_VERSION" = "10"* ]]; then
 	# Debian Buster
 	PKG_RELEASE="${PKG_RELEASE_PREFIX}~deb10u${PKG_RELEASE}"
 else
-	echo "the currently running Debian version ( $DEBIAN_VERSION ) is not supported yet by this build script."
+	echo "the currently running $RUNNING_DISTRO version ( $RUNNING_DISTRO_VERSION ) of your distro is not supported yet by this build script."
 	exit 1
 fi
 

@@ -61,7 +61,7 @@ elif [[ "$RUNNING_DISTRO_VERSION" = "10"* ]]; then
 	# Debian Buster
 	PKG_RELEASE="${PKG_RELEASE_PREFIX}~deb10u${PKG_RELEASE}"
 else
-	echo "the currently running Debian version ( $RUNNING_DISTRO_VERSION ) is not supported yet by this build script."
+	echo "the currently running $RUNNING_DISTRO version ( $RUNNING_DISTRO_VERSION ) is not supported yet by this build script."
 	exit 1
 fi
 
