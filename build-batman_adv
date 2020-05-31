@@ -17,8 +17,8 @@ RUNNING_DISTRO="$(lsb_release -s -i)"
 RUNNING_DISTRO_VERSION="$(lsb_release -r -s)"
 RUNNING_KERNEL_REL=$(uname -r)
 if [[ "$RUNNING_DISTRO" = "Debian" ]]; then
-	if [[ "$RUNNING_KERNEL_REL" = "4.19.0-0.bpo"* ]]; then
-		# stretch-backports
+	if [[ "$RUNNING_KERNEL_REL" = "4.19.0-0.bpo"* ]] || [[ "$RUNNING_KERNEL_REL" = "5.5.0-0.bpo"* ]]; then
+		# stretch-backports / buster-backports
 		REQUIRED_KERNEL=$(dpkg -l | grep "linux-image.*bpo" | grep -v meta | tail -1 | awk '{ print $2 }')
 		PKG_RELEASE="${PKG_RELEASE}.bpo.1"
 	elif [[ "$RUNNING_KERNEL_REL" = "4.9.0-0.bpo"* ]]; then
