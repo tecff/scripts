@@ -5,7 +5,7 @@ REMOTE="git://git.open-mesh.org/batman-adv.git"
 TAG="v2020.1"
 KMOD_VERSION="2020.1"
 PKG_RELEASE_PREFIX="0~tecff"
-PKG_RELEASE="1"
+PKG_RELEASE="2"
 BUILD_ROOT="/tmp/batman-adv-build"
 MAINTAINER="rotanid"
 PKGLICENSE="GPL2"
@@ -103,7 +103,10 @@ prepare() {
 build() {
 	cd $BUILD_ROOT
 	export KERNELPATH=/lib/modules/$TARGET_KERNEL/build
-	make CONFIG_BATMAN_ADV_DEBUG=y CONFIG_BATMAN_ADV_DEBUGFS=y CONFIG_BATMAN_ADV_SYSFS=y -j$(nproc)
+	# strip debug info
+	export INSTALL_MOD_STRIP=1
+	# build (including deprecated DEBUGFS & SYSFS interfaces)
+	make CONFIG_BATMAN_ADV_DEBUGFS=y CONFIG_BATMAN_ADV_SYSFS=y -j$(nproc)
 }
 
 install() {
