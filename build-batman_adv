@@ -6,7 +6,7 @@ TAG="v2020.1"
 KMOD_VERSION="2020.1"
 PKG_RELEASE_PREFIX="0~tecff"
 PKG_RELEASE="1"
-BUILD_ROOT="/usr/src/batman-adv"
+BUILD_ROOT="/tmp/batman-adv-build"
 MAINTAINER="rotanid"
 PKGLICENSE="GPL2"
 PKGGROUP="net"
@@ -95,7 +95,7 @@ prepare() {
 	git checkout "$TAG"
 
 	# apply patches if they exist
-	if [ "$(ls -A /usr/src/${PACKAGE}_patches/)" ]; then
+	if [ -d "/usr/src/${PACKAGE}_patches" ] && [ "$(ls -A /usr/src/${PACKAGE}_patches/)" ]; then
 		git am /usr/src/${PACKAGE}_patches/*
 	fi
 }
