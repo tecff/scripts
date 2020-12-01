@@ -2,10 +2,10 @@
 
 PACKAGE="batman-adv"
 REMOTE="git://git.open-mesh.org/batman-adv.git"
-TAG="v2020.1"
-KMOD_VERSION="2020.1"
+TAG="v2020.4"
+KMOD_VERSION="2020.4"
 PKG_RELEASE_PREFIX="0~tecff"
-PKG_RELEASE="2"
+PKG_RELEASE="1"
 BUILD_ROOT="/tmp/batman-adv-build"
 MAINTAINER="rotanid"
 PKGLICENSE="GPL2"
@@ -17,7 +17,7 @@ RUNNING_DISTRO="$(lsb_release -s -i)"
 RUNNING_DISTRO_VERSION="$(lsb_release -r -s)"
 RUNNING_KERNEL_REL=$(uname -r)
 if [[ "$RUNNING_DISTRO" = "Debian" ]]; then
-	if [[ "$RUNNING_KERNEL_REL" = "4.19.0-0.bpo"* ]] || [[ "$RUNNING_KERNEL_REL" = "5.5.0-0.bpo"* ]]; then
+	if [[ "$RUNNING_KERNEL_REL" = "4.19.0-0.bpo"* ]] || [[ "$RUNNING_KERNEL_REL" = "5.8.0-0.bpo"* ]]; then
 		# stretch-backports / buster-backports
 		REQUIRED_KERNEL=$(dpkg -l | grep "linux-image.*bpo" | grep -v meta | tail -1 | awk '{ print $2 }')
 		PKG_RELEASE="${PKG_RELEASE}.bpo.1"
@@ -25,8 +25,8 @@ if [[ "$RUNNING_DISTRO" = "Debian" ]]; then
 		# jessie-backports
 		REQUIRED_KERNEL=$(dpkg -s linux-image-4.9-amd64 | grep "^Depends" | sed 's/Depends:\s*//')
 		PKG_RELEASE="${PKG_RELEASE}.bpo.1"
-	elif [[ "$RUNNING_KERNEL_REL" = "4.19.0"* ]] || [[ "$RUNNING_KERNEL_REL" = "4.9.0"* ]] || [[ "$RUNNING_KERNEL_REL" = "3.16.0"* ]]; then
-		# buster, stretch, jessie
+	elif [[ "$RUNNING_KERNEL_REL" = "4.19.0"* ]] || [[ "$RUNNING_KERNEL_REL" = "4.9.0"* ]]; then
+		# buster, stretch
 		REQUIRED_KERNEL=$(dpkg -s linux-image-amd64 | grep "^Depends" | sed 's/Depends:\s*//')
 	else
 		echo "the currently running kernel version ( $RUNNING_KERNEL_REL ) is not supported yet by this build script."
