@@ -2,8 +2,8 @@
 
 PACKAGE="batctl"
 REMOTE="git://git.open-mesh.org/batctl.git"
-TAG="v2020.4"
-TARGET_VERSION="2020.4"
+TAG="v2021.0"
+TARGET_VERSION="2021.0"
 PKG_RELEASE_PREFIX="0~tecff"
 PKG_RELEASE="1"
 MAINTAINER="rotanid"
@@ -19,15 +19,9 @@ INSTALL_PREFIX="/usr"
 
 RUNNING_DISTRO="$(lsb_release -s -i)"
 RUNNING_DISTRO_VERSION="$(lsb_release -r -s)"
-if [[ "$RUNNING_DISTRO_VERSION" = "16.04"* ]]; then
-	# Ubuntu Xenial
-	PKG_RELEASE="${PKG_RELEASE_PREFIX}~ubuntu0.16.04u${PKG_RELEASE}"
-elif [[ "$RUNNING_DISTRO_VERSION" = "18.04"* ]]; then
+if [[ "$RUNNING_DISTRO_VERSION" = "18.04"* ]]; then
 	# Ubuntu Bionic
 	PKG_RELEASE="${PKG_RELEASE_PREFIX}~ubuntu0.18.04u${PKG_RELEASE}"
-elif [[ "$RUNNING_DISTRO_VERSION" = "8"* ]]; then
-	# Debian Jessie
-	PKG_RELEASE="${PKG_RELEASE_PREFIX}~deb8u${PKG_RELEASE}"
 elif [[ "$RUNNING_DISTRO_VERSION" = "9"* ]]; then
 	# Debian Stretch
 	PKG_RELEASE="${PKG_RELEASE_PREFIX}~deb9u${PKG_RELEASE}"
