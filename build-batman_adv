@@ -96,7 +96,7 @@ build() {
 	# strip debug info
 	export INSTALL_MOD_STRIP=1
 	# build (including deprecated DEBUGFS & SYSFS interfaces)
-	make CONFIG_BATMAN_ADV_DEBUGFS=y CONFIG_BATMAN_ADV_SYSFS=y -j$(nproc)
+	make -j$(nproc)
 }
 
 install() {
