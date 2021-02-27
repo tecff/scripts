@@ -1,0 +1,17 @@
+#!/bin/sh
+if [ -z "$1" ]; then
+	echo "missing interface parameter"
+	exit 1
+fi
+IFACE="$1"
+IPT="/sbin/iptables"
+for chain in OUTPUT FORWARD; do
+	$IPT -A $chain -d 192.168.0.0/16 -o $IFACE -j DROP
+	$IPT -A $chain -d 172.16.0.0/12 -o $IFACE -j DROP
+	$IPT -A $chain -d 169.254.0.0/16 -o $IFACE -j DROP
+	$IPT -A $chain -d 10.0.0.0/8 -o $IFACE -j DROP
+	$IPT -A $chain -s 192.168.0.0/16 -o $IFACE -j DROP
+	$IPT -A $chain -s 172.16.0.0/12 -o $IFACE -j DROP
+	$IPT -A $chain -s 169.254.0.0/16 -o $IFACE -j DROP
+	$IPT -A $chain -s 10.0.0.0/8 -o $IFACE -j DROP
+done
