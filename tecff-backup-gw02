@@ -2,9 +2,9 @@
 # this script backs up important data on tecff server gw02 
 # dependencies: duplicity
 
-BSRV="backup0.denue0.conemu.net"
-BUSR="b_freifunkaltdorf_gw02"
-BPATH="/data/duplicity"
+BSRV="u267460.your-storagebox.de"
+BUSR="u267460"
+BPATH="/home/backups/gw02/duplicity"
 LOGPATH="/var/log/duplicity-gw02.log"
 
 echo >> ${LOGPATH}
@@ -12,6 +12,6 @@ echo "===============================================================" >> ${LOGP
 echo "NEW BACKUP STARTS: $(date)" >> ${LOGPATH}
 
 for dir in /var/local/tecff-raw /var/lib/yanic; do
-	duplicity full --no-encryption $dir sftp://${BUSR}@${BSRV}/${BPATH}/$dir >> ${LOGPATH}
-	duplicity remove-older-than 4W --force sftp://${BUSR}@${BSRV}/${BPATH}/$dir >> ${LOGPATH}
+	duplicity full --no-encryption $dir sftp://${BUSR}@${BSRV}:23/${BPATH}/$dir >> ${LOGPATH}
+	duplicity remove-older-than 8W --force sftp://${BUSR}@${BSRV}:23/${BPATH}/$dir >> ${LOGPATH}
 done

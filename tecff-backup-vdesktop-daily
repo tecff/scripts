@@ -2,9 +2,9 @@
 # this script backs up important data on tecff server vdesktop
 # dependencies: duplicity
 
-BSRV="backup0.denue0.conemu.net"
-BUSR="b_freifunkaltdorf_vdesktop"
-BPATH="/data/duplicity_daily"
+BSRV="u267460.your-storagebox.de"
+BUSR="u267460"
+BPATH="/home/backups/vdesktop/duplicity_daily"
 LOGPATH="/var/log/duplicity-vdesktop-daily.log"
 
 echo >> ${LOGPATH}
@@ -12,6 +12,6 @@ echo "===============================================================" >> ${LOGP
 echo "NEW BACKUP STARTS: $(date)" >> ${LOGPATH}
 
 for dir in /home/ffa; do
-	duplicity full --no-encryption $dir sftp://${BUSR}@${BSRV}/${BPATH}/$dir >> ${LOGPATH}
-	duplicity remove-older-than 40D --force sftp://${BUSR}@${BSRV}/${BPATH}/$dir >> ${LOGPATH}
+	duplicity full --no-encryption $dir sftp://${BUSR}@${BSRV}:23/${BPATH}/$dir >> ${LOGPATH}
+	duplicity remove-older-than 40D --force sftp://${BUSR}@${BSRV}:23/${BPATH}/$dir >> ${LOGPATH}
 done

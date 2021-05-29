@@ -2,9 +2,9 @@
 # this script backs up important data on tecff server stat01
 # dependencies: duplicity
 
-BSRV="backup0.denue0.conemu.net"
-BUSR="b_freifunkaltdorf_stat01"
-BPATH="/data/duplicity"
+BSRV="u267460.your-storagebox.de"
+BUSR="u267460"
+BPATH="/home/backups/stat01/duplicity"
 LOGPATH="/var/log/duplicity-stat01.log"
 
 echo >> ${LOGPATH}
@@ -12,5 +12,5 @@ echo "===============================================================" >> ${LOGP
 echo "NEW BACKUP STARTS: $(date)" >> ${LOGPATH}
 
 # /var/lib/graphite
-duplicity full --no-encryption /var/lib/graphite sftp://${BUSR}@${BSRV}/${BPATH}/graphite >> ${LOGPATH}
-duplicity remove-older-than 14D --force sftp://${BUSR}@${BSRV}/${BPATH}/graphite >> ${LOGPATH}
+duplicity full --no-encryption /var/lib/graphite sftp://${BUSR}@${BSRV}:23/${BPATH}/graphite >> ${LOGPATH}
+duplicity remove-older-than 20D --force sftp://${BUSR}@${BSRV}:23/${BPATH}/graphite >> ${LOGPATH}
