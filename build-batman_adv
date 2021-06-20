@@ -2,8 +2,8 @@
 
 PACKAGE="batman-adv"
 REMOTE="git://git.open-mesh.org/batman-adv.git"
-TAG="v2021.0"
-KMOD_VERSION="2021.0"
+TAG="v2021.1"
+KMOD_VERSION="2021.1"
 PKG_RELEASE_PREFIX="0~tecff"
 PKG_RELEASE="1"
 BUILD_ROOT="/tmp/batman-adv-build"
@@ -17,7 +17,7 @@ RUNNING_DISTRO="$(lsb_release -s -i)"
 RUNNING_DISTRO_VERSION="$(lsb_release -r -s)"
 RUNNING_KERNEL_REL=$(uname -r)
 if [[ "$RUNNING_DISTRO" = "Debian" ]]; then
-	if [[ "$RUNNING_KERNEL_REL" = "4.19.0-0.bpo"* ]] || [[ "$RUNNING_KERNEL_REL" = "5.9.0-0.bpo"* ]]; then
+	if [[ "$RUNNING_KERNEL_REL" = "4.19.0-0.bpo"* ]] || [[ "$RUNNING_KERNEL_REL" = "5.10.0-0.bpo"* ]]; then
 		# stretch-backports / buster-backports
 		REQUIRED_KERNEL=$(dpkg -l | grep "linux-image.*bpo" | grep -v meta | tail -1 | awk '{ print $2 }')
 		PKG_RELEASE="${PKG_RELEASE}.bpo.1"
