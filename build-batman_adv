@@ -17,7 +17,10 @@ RUNNING_DISTRO="$(lsb_release -s -i)"
 RUNNING_DISTRO_VERSION="$(lsb_release -r -s)"
 RUNNING_KERNEL_REL=$(uname -r)
 if [[ "$RUNNING_DISTRO" = "Debian" ]]; then
-	if [[ "$RUNNING_KERNEL_REL" = "4.19.0-0.bpo"* ]] || [[ "$RUNNING_KERNEL_REL" = "5.10.0-0.bpo"* ]]; then
+	if [[ "$RUNNING_KERNEL_REL" = "5.10.0"* ]]; then
+		# bullseye
+		REQUIRED_KERNEL=$(dpkg -s linux-image-amd64 | grep "^Depends" | cut -d" " -f2)
+	elif [[ "$RUNNING_KERNEL_REL" = "4.19.0-0.bpo"* ]] || [[ "$RUNNING_KERNEL_REL" = "5.10.0-0.bpo"* ]]; then
 		# stretch-backports / buster-backports
 		REQUIRED_KERNEL=$(dpkg -l | grep "linux-image.*bpo" | grep -v meta | tail -1 | awk '{ print $2 }')
 		PKG_RELEASE="${PKG_RELEASE}.bpo.1"
@@ -50,6 +53,9 @@ elif [[ "$RUNNING_DISTRO_VERSION" = "9"* ]]; then
 elif [[ "$RUNNING_DISTRO_VERSION" = "10"* ]]; then
 	# Debian Buster
 	PKG_RELEASE="${PKG_RELEASE_PREFIX}~deb10u${PKG_RELEASE}"
+elif [[ "$RUNNING_DISTRO_VERSION" = "11"* ]]; then
+	# Debian Bullseye
+	PKG_RELEASE="${PKG_RELEASE_PREFIX}~deb11u${PKG_RELEASE}"
 else
 	echo "the currently running $RUNNING_DISTRO version ( $RUNNING_DISTRO_VERSION ) is not supported yet by this build script."
 	exit 1
