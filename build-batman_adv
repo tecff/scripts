@@ -17,13 +17,13 @@ RUNNING_DISTRO="$(lsb_release -s -i)"
 RUNNING_DISTRO_VERSION="$(lsb_release -r -s)"
 RUNNING_KERNEL_REL=$(uname -r)
 if [[ "$RUNNING_DISTRO" = "Debian" ]]; then
-	if [[ "$RUNNING_KERNEL_REL" = "5.10.0"* ]]; then
-		# bullseye
-		REQUIRED_KERNEL=$(dpkg -s linux-image-amd64 | grep "^Depends" | cut -d" " -f2)
-	elif [[ "$RUNNING_KERNEL_REL" = "4.19.0-0.bpo"* ]] || [[ "$RUNNING_KERNEL_REL" = "5.10.0-0.bpo"* ]]; then
+	if [[ "$RUNNING_KERNEL_REL" = "4.19.0-0.bpo"* ]] || [[ "$RUNNING_KERNEL_REL" = "5.10.0-0.bpo"* ]]; then
 		# stretch-backports / buster-backports
 		REQUIRED_KERNEL=$(dpkg -l | grep "linux-image.*bpo" | grep -v meta | tail -1 | awk '{ print $2 }')
 		PKG_RELEASE="${PKG_RELEASE}.bpo.1"
+	elif [[ "$RUNNING_KERNEL_REL" = "5.10.0"* ]]; then
+		# bullseye
+		REQUIRED_KERNEL=$(dpkg -s linux-image-amd64 | grep "^Depends" | cut -d" " -f2)
 	elif [[ "$RUNNING_KERNEL_REL" = "4.19.0"* ]] || [[ "$RUNNING_KERNEL_REL" = "4.9.0"* ]]; then
 		# buster, stretch
 		REQUIRED_KERNEL=$(dpkg -s linux-image-amd64 | grep "^Depends" | sed 's/Depends:\s*//')
