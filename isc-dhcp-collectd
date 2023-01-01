@@ -1,0 +1,15 @@
+#!/bin/sh
+
+HOSTNAME="${COLLECTD_HOSTNAME:-$(hostname --fqdn)}"
+INTERVAL="${COLLECTD_INTERVAL:-60}"
+#INTERVAL="${COLLECTD_INTERVAL:-5}"
+
+
+while sleep "$INTERVAL"; do
+	LEASES=$(dhcp-lease-list --parsable | awk '{ print $4 }')
+	echo "$LEASES" | cut -d. -f3 | sort -uh | while read SUBNET; do
+		VALUE="$(echo "$LEASES" | grep "10.120.${SUBNET}." | wc -l)"
+		echo "PUTVAL \"$HOSTNAME/exec-isc-dhcp/gauge-dhcp-leases-${SUBNET}\" interval=$INTERVAL N:$VALUE"
+		echo "PUTVAL \"$HOSTNAME/exec-isc-dhcp/gauge-dhcp-range-${SUBNET}\" interval=$INTERVAL N:254"
+	done
+done

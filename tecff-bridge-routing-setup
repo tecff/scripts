@@ -1,0 +1,49 @@
+#!/bin/bash
+if [ -z "$1" ] || [ -z "$2" ]; then
+	echo "missing parameters! (SUBNET4, SUBNET6)"
+	exit 1
+fi
+
+# IFACE and MODE are set as an environment variable by ifupdown
+SUBNET4="$1"
+SUBNET6="$2"
+# for IPv4, subnet in format 10.120.x.0/yz is expected
+# for IPv6, subnet only the last part is expected, e.g. "96"
+
+if [ "$MODE" == "start" ]; then
+	if [[ "$SUBNET4" =~ ^10\.120\.[0-9]+\.0/[0-9]+$ ]]; then
+		ip -4 rule add iif $IFACE table 42
+		if ! [[ "$(ip -4 route show default table 42 | grep unreachable)" =~ "unreachable default" ]]; then
+			ip -4 route add unreachable default metric 2000 table 42
+		fi
+		ip -4 route add $SUBNET4 dev $IFACE table 42
+	fi
+	if [[ "$SUBNET6" =~ ^[0-9]+$  ]]; then
+		ip -6 route add 2001:470:733f:${SUBNET6}::/64 dev $IFACE
+		ip -6 rule add iif $IFACE table 42
+		if ! [[ "$(ip -6 route show default table 42 | grep unreachable)" =~ "unreachable default" ]]; then
+			ip -6 route add unreachable default metric 2000 table 42
+		fi
+		ip -6 route add 2001:470:733f:${SUBNET6}::/64 dev $IFACE table 42
+		ip -6 route add fdef:ffc0:4ffa:${SUBNET6}::/64 dev $IFACE table 42
+	fi
+elif [ "$MODE" == "stop" ]; then
+	if ! ip link show dev $IFACE >/dev/null 2>&1; then
+		# exit if the interface does not exist (anymore)
+		exit 0
+	fi
+	if [[ "$SUBNET4" =~ ^10\.120\.[0-9]+\.0/[0-9]+$ ]]; then
+		ip -4 route del $SUBNET4 dev $IFACE table 42
+		ip -4 route del unreachable default metric 2000 table 42
+		ip -4 rule del iif $IFACE table 42
+	fi
+	if [[ "$SUBNET6" =~ ^[0-9]+$  ]]; then
+		ip -6 route del 2001:470:733f:${SUBNET6}::/64 dev $IFACE table 42
+		ip -6 route del fdef:ffc0:4ffa:${SUBNET6}::/64 dev $IFACE table 42
+		ip -6 route del unreachable default metric 2000 table 42
+		ip -6 rule del iif $IFACE table 42
+		ip -6 route del 2001:470:733f:${SUBNET6}::/64 dev $IFACE
+	fi
+else
+	exit 1
+fi

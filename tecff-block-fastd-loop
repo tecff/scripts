@@ -1,0 +1,15 @@
+#!/bin/bash
+# IFACE and MODE are set as an environment variable by ifupdown
+if [ "$MODE" = "start" ]; then
+	ip6tables -I INPUT -d 2a01:4f8:10b:1265::3/128 -i $IFACE -p udp --dport 10000:11000 -j REJECT --reject-with icmp6-adm-prohibited
+	ip6tables -I FORWARD -d 2a01:4f8:171:2b48::119/128 -i $IFACE -p udp --dport 10000:11000 -j REJECT --reject-with icmp6-adm-prohibited
+	ip6tables -I INPUT -d 2a01:4f8:10b:1265::3/128 -i $IFACE -p udp --dport 10000:11000 -m limit --limit 2/sec -j LOG --log-prefix 'fastd over mesh: '
+	ip6tables -I FORWARD -d 2a01:4f8:171:2b48::119/128 -i $IFACE -p udp --dport 10000:11000 -m limit --limit 2/sec -j LOG --log-prefix 'fastd over mesh: '
+elif [ "$MODE" = "stop" ]; then
+	ip6tables -D INPUT -d 2a01:4f8:10b:1265::3/128 -i $IFACE -p udp --dport 10000:11000 -m limit --limit 2/sec -j LOG --log-prefix 'fastd over mesh: '
+	ip6tables -D FORWARD -d 2a01:4f8:171:2b48::119/128 -i $IFACE -p udp --dport 10000:11000 -m limit --limit 2/sec -j LOG --log-prefix 'fastd over mesh: '
+	ip6tables -D INPUT -d 2a01:4f8:10b:1265::3/128 -i $IFACE -p udp --dport 10000:11000 -j REJECT --reject-with icmp6-adm-prohibited
+	ip6tables -D FORWARD -d 2a01:4f8:171:2b48::119/128 -i $IFACE -p udp --dport 10000:11000 -j REJECT --reject-with icmp6-adm-prohibited
+else
+	exit 1
+fi
