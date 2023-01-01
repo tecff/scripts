@@ -1,0 +1,14 @@
+#!/bin/bash
+BSRV="u267460.your-storagebox.de"
+BUSR="u267460"
+BPATH="/home/backups/host03/duplicity"
+LOGPATH="/var/log/duplicity-host03.log"
+
+echo >> ${LOGPATH}
+echo "===============================================================" >> ${LOGPATH}
+echo "NEW BACKUP STARTS: $(date)" >> ${LOGPATH}
+
+for dir in /var/lib/yanic; do
+	duplicity full --no-encryption $dir sftp://${BUSR}@${BSRV}:23/${BPATH}/$dir >> ${LOGPATH}
+	duplicity remove-older-than 8W --force sftp://${BUSR}@${BSRV}:23/${BPATH}/$dir >> ${LOGPATH}
+done
