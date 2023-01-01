@@ -7,21 +7,23 @@ BATCTL="$(which batctl)"
 PERFVALLIST="neighbors originators translocal transglobal claimtable dat_cache transglobal-size transglobal-unicast transglobal-multicast"
 
 while sleep "$INTERVAL"; do
-	for METRIC in $PERFVALLIST; do
-		if [ "$METRIC" = "transglobal-size" ]; then
-			VALUE="$(sudo $BATCTL transglobal -H -n | wc -c)"
-		elif [ "$METRIC" = "transglobal-unicast" ]; then
-			VALUE="$(sudo $BATCTL transglobal -u -H -n | wc -l)"
-		elif [ "$METRIC" = "transglobal-multicast" ]; then
-			VALUE="$(sudo $BATCTL transglobal -m -H -n | wc -l)"
-		else
-			VALUE="$(sudo $BATCTL $METRIC -H -n | wc -l)"
-		fi
-		echo "PUTVAL \"$HOSTNAME/exec-batman-metrics/gauge-$METRIC\" interval=$INTERVAL N:$VALUE"
+	for BATIF in $(ip link show | grep ": bat_" | cut -d: -f2 | sed "s| ||g"); do
+		for METRIC in $PERFVALLIST; do
+			if [ "$METRIC" = "transglobal-size" ]; then
+				VALUE="$(sudo $BATCTL meshif $BATIF transglobal -H -n | wc -c)"
+			elif [ "$METRIC" = "transglobal-unicast" ]; then
+				VALUE="$(sudo $BATCTL meshif $BATIF transglobal -u -H -n | wc -l)"
+			elif [ "$METRIC" = "transglobal-multicast" ]; then
+				VALUE="$(sudo $BATCTL meshif $BATIF transglobal -m -H -n | wc -l)"
+			else
+				VALUE="$(sudo $BATCTL meshif $BATIF $METRIC -H -n | wc -l)"
+			fi
+			echo "PUTVAL \"$HOSTNAME/exec-batman-metrics/gauge-${METRIC}-${BATIF}\" interval=$INTERVAL N:$VALUE"
+		done
+		while read stat; do
+			METRIC="statistics_${stat%:*}"
+			VALUE="${stat#*:}"
+			echo "PUTVAL \"$HOSTNAME/exec-batman-metrics/gauge-${METRIC}-${BATIF}\" interval=$INTERVAL N:$VALUE"
+		done < <(sudo $BATCTL meshif $BATIF statistics | awk '{ print $1 $2 }')
 	done
-	while read stat; do
-		METRIC="statistics_${stat%:*}"
-		VALUE="${stat#*:}"
-		echo "PUTVAL \"$HOSTNAME/exec-batman-metrics/gauge-$METRIC\" interval=$INTERVAL N:$VALUE"
-	done < <(sudo $BATCTL statistics | awk '{ print $1 $2 }')
 done

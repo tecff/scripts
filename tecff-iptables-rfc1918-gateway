@@ -1,9 +1,5 @@
 #!/bin/sh
-if [ -z "$1" ]; then
-	echo "missing interface parameter"
-	exit 1
-fi
-IFACE="$1"
+# IFACE is set as an environment variable by ifupdown
 IPT="/sbin/iptables"
 $IPT -A OUTPUT -d 192.168.0.0/16 -o $IFACE -j DROP
 $IPT -A OUTPUT -d 172.16.0.0/12 -o $IFACE -j DROP

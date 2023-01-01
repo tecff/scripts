@@ -1,16 +1,18 @@
 #!/bin/bash
-# this script is used on a B.A.T.M.A.N. gateway to change the routing of some ports so the traffic doesn't got through the vpn provider
+# this script is used on a B.A.T.M.A.N. gateway to change the routing of some ports so the traffic doesn't get through the vpn provider
 # dependencies: iptables, iproute2
 
-if [ -z "$1" ] || [ -z "$2" ] || [ -z "$3" ] || [ -z "$4" ] || [ -z "$5" ]; then
-	echo "missing parameters! ((up|down), BRIDGEIF, INETIF, PUBV4, PUBV4_EXT)"
+if [ -z "$1" ] || [ -z "$2" ] || [ -z "$3" ]; then
+	echo "missing parameters! (INETIF, PUBV4, PUBV4_EXT)"
 	exit 1
 fi
 
-BRIDGEIF="$2"
-INETIF="$3"
-PUBV4="$4"
-PUBV4_EXT="$5"
+# IFACE and MODE are set as an environment variable by ifupdown
+BRIDGEIF="$IFACE"
+INETIF="$1"
+PUBV4="$2"
+PUBV4_BARE="${PUBV4//\/32}" # remove subnet from PUBV4
+PUBV4_EXT="$3"
 TCPPORTS="25,80,110,143,443,465,554,587,993,995,1194,1293,1935"
 UDPPORTS="443,500,554,1194,1293,1935,4500"
 # port explanation:
@@ -21,45 +23,57 @@ UDPPORTS="443,500,554,1194,1293,1935,4500"
 # 1194:            SSL-VPN
 # 554,1935:        rtsp, rtmp
 
-if [ "$1" == "up" ]; then
-	iptables -t mangle -N DIRECT
-	iptables -t mangle -A DIRECT --dst 192.168.0.0/16 -j RETURN
-	iptables -t mangle -A DIRECT --dst 172.16.0.0/12 -j RETURN
-	iptables -t mangle -A DIRECT --dst 10.0.0.0/8 -j RETURN
-	iptables -t mangle -A DIRECT --dst 169.254.0.0/16 -j RETURN
-	iptables -t mangle -A DIRECT --jump MARK --set-mark 1
+if [ "$MODE" == "start" ]; then
+	if ! iptables -t mangle -L DIRECT >/dev/null 2>&1; then
+		iptables -t mangle -N DIRECT
+	fi
+	if ! [ "$(iptables -t mangle -L DIRECT -n | grep RETURN | wc -l)" -gt 0 ]; then
+		iptables -t mangle -A DIRECT --dst 192.168.0.0/16 -j RETURN
+		iptables -t mangle -A DIRECT --dst 172.16.0.0/12 -j RETURN
+		iptables -t mangle -A DIRECT --dst 10.0.0.0/8 -j RETURN
+		iptables -t mangle -A DIRECT --dst 169.254.0.0/16 -j RETURN
+		iptables -t mangle -A DIRECT --jump MARK --set-mark 1
+	fi
 	# TCP
 	iptables -t mangle -A PREROUTING -i ${BRIDGEIF} -p tcp -m multiport --dports ${TCPPORTS} -j DIRECT
-	iptables -t nat -A POSTROUTING -o ${INETIF} -p tcp -m multiport --dports ${TCPPORTS} -m comment --comment "000 Masquerade traffic for some ports" -j MASQUERADE
+#	iptables -t nat -A POSTROUTING -o ${INETIF} -p tcp -m multiport --dports ${TCPPORTS} -m comment --comment "000 Masquerade traffic for some ports" -j MASQUERADE
+	iptables -t nat -A POSTROUTING -o ${INETIF} -p tcp -m multiport --dports ${TCPPORTS} -m comment --comment "000 Masquerade traffic for some ports" -j SNAT --to-source ${PUBV4_BARE}
 	iptables -I FORWARD -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu
-	iptables -A FORWARD -i ${BRIDGEIF} -o ${INETIF} -p tcp -m multiport --dports ${TCPPORTS} -m comment --comment "000 Allow bridge to eth0 forwarding for some ports" -j ACCEPT
-	iptables -A FORWARD -i ${INETIF} -o ${BRIDGEIF} -p tcp -m multiport --sports ${TCPPORTS} -m comment --comment "000 Allow eth0 to bridge forwarding for some ports" -j ACCEPT
+	iptables -A FORWARD -i ${BRIDGEIF} -o ${INETIF} -p tcp -m multiport --dports ${TCPPORTS} -m comment --comment "000 Allow bridge to ${INETIF} forwarding for some ports" -j ACCEPT
+	iptables -A FORWARD -i ${INETIF} -o ${BRIDGEIF} -p tcp -m multiport --sports ${TCPPORTS} -m comment --comment "000 Allow ${INETIF} to bridge forwarding for some ports" -j ACCEPT
 	# UDP
 	iptables -t mangle -A PREROUTING -i ${BRIDGEIF} -p udp -m multiport --dports ${UDPPORTS} -j DIRECT
-	iptables -t nat -A POSTROUTING -o ${INETIF} -p udp -m multiport --dports ${UDPPORTS} -m comment --comment "000 Masquerade traffic for some ports" -j MASQUERADE
+#	iptables -t nat -A POSTROUTING -o ${INETIF} -p udp -m multiport --dports ${UDPPORTS} -m comment --comment "000 Masquerade traffic for some ports" -j MASQUERADE
+	iptables -t nat -A POSTROUTING -o ${INETIF} -p udp -m multiport --dports ${UDPPORTS} -m comment --comment "000 Masquerade traffic for some ports" -j SNAT --to-source ${PUBV4_BARE}
 	iptables -A INPUT -d ${PUBV4} -i ${BRIDGEIF} -p udp --dport 10000:11000 -m limit --limit 2/sec -j LOG --log-prefix 'fastd over mesh: '
 	iptables -A INPUT -d ${PUBV4} -i ${BRIDGEIF} -p udp --dport 10000:11000 -j REJECT --reject-with icmp-admin-prohibited
 	iptables -A FORWARD -d ${PUBV4_EXT} -i ${BRIDGEIF} -p udp --dport 10000:11000 -m limit --limit 2/sec -j LOG --log-prefix 'fastd over mesh: '
 	iptables -A FORWARD -d ${PUBV4_EXT} -i ${BRIDGEIF} -p udp --dport 10000:11000 -j REJECT --reject-with icmp-admin-prohibited
-	iptables -A FORWARD -i ${BRIDGEIF} -o ${INETIF} -p udp -m multiport --dports ${UDPPORTS} -m comment --comment "000 Allow bridge to eth0 forwarding for some ports" -j ACCEPT
-	iptables -A FORWARD -i ${INETIF} -o ${BRIDGEIF} -p udp -m multiport --sports ${UDPPORTS} -m comment --comment "000 Allow eth0 to bridge forwarding for some ports" -j ACCEPT
+	iptables -A FORWARD -i ${BRIDGEIF} -o ${INETIF} -p udp -m multiport --dports ${UDPPORTS} -m comment --comment "000 Allow bridge to ${INETIF} forwarding for some ports" -j ACCEPT
+	iptables -A FORWARD -i ${INETIF} -o ${BRIDGEIF} -p udp -m multiport --sports ${UDPPORTS} -m comment --comment "000 Allow ${INETIF} to bridge forwarding for some ports" -j ACCEPT
 	ip rule del fwmark 1 >/dev/null 2>&1
 	ip rule add fwmark 1 table main
-else
+elif [ "$MODE" == "stop" ]; then
 	iptables -t mangle -D PREROUTING -i ${BRIDGEIF} -p tcp -m multiport --dports ${TCPPORTS} -j DIRECT
 	iptables -t mangle -D PREROUTING -i ${BRIDGEIF} -p udp -m multiport --dports ${UDPPORTS} -j DIRECT
-	iptables -t mangle -F
-	iptables -t mangle -X DIRECT
-	iptables -t nat -D POSTROUTING -o ${INETIF} -p tcp -m multiport --dports ${TCPPORTS} -m comment --comment "000 Masquerade traffic for some ports" -j MASQUERADE
-	iptables -D FORWARD -i ${BRIDGEIF} -o ${INETIF} -p tcp -m multiport --dports ${TCPPORTS} -m comment --comment "000 Allow bridge to eth0 forwarding for some ports" -j ACCEPT
-	iptables -D FORWARD -i ${INETIF} -o ${BRIDGEIF} -p tcp -m multiport --sports ${TCPPORTS} -m comment --comment "000 Allow eth0 to bridge forwarding for some ports" -j ACCEPT
+#	iptables -t nat -D POSTROUTING -o ${INETIF} -p tcp -m multiport --dports ${TCPPORTS} -m comment --comment "000 Masquerade traffic for some ports" -j MASQUERADE
+	iptables -t nat -D POSTROUTING -o ${INETIF} -p tcp -m multiport --dports ${TCPPORTS} -m comment --comment "000 Masquerade traffic for some ports" -j SNAT --to-source ${PUBV4_BARE}
+	iptables -D FORWARD -i ${BRIDGEIF} -o ${INETIF} -p tcp -m multiport --dports ${TCPPORTS} -m comment --comment "000 Allow bridge to ${INETIF} forwarding for some ports" -j ACCEPT
+	iptables -D FORWARD -i ${INETIF} -o ${BRIDGEIF} -p tcp -m multiport --sports ${TCPPORTS} -m comment --comment "000 Allow ${INETIF} to bridge forwarding for some ports" -j ACCEPT
 	iptables -D FORWARD -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu
-	iptables -t nat -D POSTROUTING -o ${INETIF} -p udp -m multiport --dports ${UDPPORTS} -m comment --comment "000 Masquerade traffic for some ports" -j MASQUERADE
-	iptables -D FORWARD -i ${BRIDGEIF} -o ${INETIF} -p udp -m multiport --dports ${UDPPORTS} -m comment --comment "000 Allow bridge to eth0 forwarding for some ports" -j ACCEPT
-	iptables -D FORWARD -i ${INETIF} -o ${BRIDGEIF} -p udp -m multiport --sports ${UDPPORTS} -m comment --comment "000 Allow eth0 to bridge forwarding for some ports" -j ACCEPT
+#	iptables -t nat -D POSTROUTING -o ${INETIF} -p udp -m multiport --dports ${UDPPORTS} -m comment --comment "000 Masquerade traffic for some ports" -j MASQUERADE
+	iptables -t nat -D POSTROUTING -o ${INETIF} -p udp -m multiport --dports ${UDPPORTS} -m comment --comment "000 Masquerade traffic for some ports" -j SNAT --to-source ${PUBV4_BARE}
+	iptables -D FORWARD -i ${BRIDGEIF} -o ${INETIF} -p udp -m multiport --dports ${UDPPORTS} -m comment --comment "000 Allow bridge to ${INETIF} forwarding for some ports" -j ACCEPT
+	iptables -D FORWARD -i ${INETIF} -o ${BRIDGEIF} -p udp -m multiport --sports ${UDPPORTS} -m comment --comment "000 Allow ${INETIF} to bridge forwarding for some ports" -j ACCEPT
 	iptables -D INPUT -d ${PUBV4} -i ${BRIDGEIF} -p udp --dport 10000:11000 -m limit --limit 2/sec -j LOG --log-prefix 'fastd over mesh: '
 	iptables -D INPUT -d ${PUBV4} -i ${BRIDGEIF} -p udp --dport 10000:11000 -j REJECT --reject-with icmp-admin-prohibited
 	iptables -D FORWARD -d ${PUBV4_EXT} -i ${BRIDGEIF} -p udp --dport 10000:11000 -m limit --limit 2/sec -j LOG --log-prefix 'fastd over mesh: '
 	iptables -D FORWARD -d ${PUBV4_EXT} -i ${BRIDGEIF} -p udp --dport 10000:11000 -j REJECT --reject-with icmp-admin-prohibited
-	ip rule del fwmark 1
+	if [ "$(iptables -t mangle -L PREROUTING -n | grep multiport | wc -l)" -eq 0 ]; then
+		iptables -t mangle -F
+		iptables -t mangle -X DIRECT
+		ip rule del fwmark 1
+	fi
+else
+	exit 1
 fi

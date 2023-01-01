@@ -15,6 +15,7 @@ SUBNETIP="$5"
 if [ "$1" == "up" ]; then
 	ip -6 addr add $SUBNETIP dev $BRIDGEIF
 	ip -6 route add unreachable default metric 2000 table 42
+	ip -6 route add $SUBNETIP dev $BRIDGEIP table 42
 	ip -6 route add default via $DEFGW table 42 dev $TUNIF
 	ip -6 rule add iif $BRIDGEIF table 42
 	ip6tables -I FORWARD -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu
@@ -27,6 +28,7 @@ else
 	ip6tables -D FORWARD -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu
 	ip -6 rule del iif $BRIDGEIF table 42
 	ip -6 route del default via $DEFGW table 42 dev $TUNIF
+	ip -6 route del $SUBNETIP dev $BRIDGEIP table 42
 	ip -6 route del unreachable default metric 2000 table 42
 	ip -6 addr del $SUBNETIP dev $BRIDGEIF
 fi
