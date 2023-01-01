@@ -17,40 +17,28 @@ RUNNING_DISTRO="$(lsb_release -s -i)"
 RUNNING_DISTRO_VERSION="$(lsb_release -r -s)"
 RUNNING_KERNEL_REL=$(uname -r)
 if [[ "$RUNNING_DISTRO" = "Debian" ]]; then
-	if [[ "$RUNNING_KERNEL_REL" = "4.19.0-0.bpo"* ]] || [[ "$RUNNING_KERNEL_REL" = "5.10.0-0.bpo"* ]]; then
-		# stretch-backports / buster-backports
+	if [[ "$RUNNING_KERNEL_REL" = "5.10.0-0.bpo"* ]]; then
+		# buster-backports
 		REQUIRED_KERNEL=$(dpkg -l | grep "linux-image.*bpo" | grep -v meta | tail -1 | awk '{ print $2 }')
 		PKG_RELEASE="${PKG_RELEASE}.bpo.1"
 	elif [[ "$RUNNING_KERNEL_REL" = "5.10.0"* ]]; then
 		# bullseye
 		REQUIRED_KERNEL=$(dpkg -s linux-image-amd64 | grep "^Depends" | cut -d" " -f2)
-	elif [[ "$RUNNING_KERNEL_REL" = "4.19.0"* ]] || [[ "$RUNNING_KERNEL_REL" = "4.9.0"* ]]; then
-		# buster, stretch
+	elif [[ "$RUNNING_KERNEL_REL" = "4.19.0"* ]]; then
+		# buster
 		REQUIRED_KERNEL=$(dpkg -s linux-image-amd64 | grep "^Depends" | sed 's/Depends:\s*//')
 	else
 		echo "the currently running kernel version ( $RUNNING_KERNEL_REL ) is not supported yet by this build script."
 		exit 1
 	fi
 	TARGET_KERNEL=$(echo $REQUIRED_KERNEL | sed "s/linux-image-//")
-elif [[ "$RUNNING_DISTRO" = "Ubuntu" ]]; then
-	TARGET_KERNEL="$RUNNING_KERNEL_REL"
-	REQUIRED_KERNEL="linux-image-${RUNNING_KERNEL_REL}"
-	if [[ "$(dpkg -l | grep linux-generic-hwe | wc -l)" -gt 0 ]]; then
-		PKG_RELEASE="${PKG_RELEASE}.hwe.1"
-	fi
 else
 	echo "the running distro is not supported."
 	exit 1
 fi
 REQUIRES="${REQUIRED_KERNEL}"
 
-if [[ "$RUNNING_DISTRO_VERSION" = "18.04"* ]]; then
-	# Ubuntu Bionic
-	PKG_RELEASE="${PKG_RELEASE_PREFIX}~ubuntu0.18.04u${PKG_RELEASE}"
-elif [[ "$RUNNING_DISTRO_VERSION" = "9"* ]]; then
-	# Debian Stretch
-	PKG_RELEASE="${PKG_RELEASE_PREFIX}~deb9u${PKG_RELEASE}"
-elif [[ "$RUNNING_DISTRO_VERSION" = "10"* ]]; then
+if [[ "$RUNNING_DISTRO_VERSION" = "10"* ]]; then
 	# Debian Buster
 	PKG_RELEASE="${PKG_RELEASE_PREFIX}~deb10u${PKG_RELEASE}"
 elif [[ "$RUNNING_DISTRO_VERSION" = "11"* ]]; then

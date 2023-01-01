@@ -19,13 +19,7 @@ INSTALL_PREFIX="/usr"
 
 RUNNING_DISTRO="$(lsb_release -s -i)"
 RUNNING_DISTRO_VERSION="$(lsb_release -r -s)"
-if [[ "$RUNNING_DISTRO_VERSION" = "18.04"* ]]; then
-	# Ubuntu Bionic
-	PKG_RELEASE="${PKG_RELEASE_PREFIX}~ubuntu0.18.04u${PKG_RELEASE}"
-elif [[ "$RUNNING_DISTRO_VERSION" = "9"* ]]; then
-	# Debian Stretch
-	PKG_RELEASE="${PKG_RELEASE_PREFIX}~deb9u${PKG_RELEASE}"
-elif [[ "$RUNNING_DISTRO_VERSION" = "10"* ]]; then
+if [[ "$RUNNING_DISTRO_VERSION" = "10"* ]]; then
 	# Debian Buster
 	PKG_RELEASE="${PKG_RELEASE_PREFIX}~deb10u${PKG_RELEASE}"
 elif [[ "$RUNNING_DISTRO_VERSION" = "11"* ]]; then
