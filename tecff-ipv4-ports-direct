@@ -39,7 +39,7 @@ if [ "$MODE" == "start" ]; then
 	# TCP
 	iptables -t mangle -A PREROUTING -i ${BRIDGEIF} -p tcp -m multiport --dports ${TCPPORTS} -j DIRECT
 	iptables -t nat -A POSTROUTING -o ${INETIF} -p tcp -m multiport --dports ${TCPPORTS} -m comment --comment "000 Masquerade traffic for some ports" -j SNAT --to-source ${PUBV4_BARE}
-	iptables -I FORWARD -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu
+	iptables -I FORWARD -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --set-mss 1240
 	iptables -A FORWARD -i ${BRIDGEIF} -o ${INETIF} -p tcp -m multiport --dports ${TCPPORTS} -m comment --comment "000 Allow bridge to ${INETIF} forwarding for some ports" -j ACCEPT
 	iptables -A FORWARD -i ${INETIF} -o ${BRIDGEIF} -p tcp -m multiport --sports ${TCPPORTS} -m comment --comment "000 Allow ${INETIF} to bridge forwarding for some ports" -j ACCEPT
 	# UDP
@@ -59,7 +59,7 @@ elif [ "$MODE" == "stop" ]; then
 	iptables -t nat -D POSTROUTING -o ${INETIF} -p tcp -m multiport --dports ${TCPPORTS} -m comment --comment "000 Masquerade traffic for some ports" -j SNAT --to-source ${PUBV4_BARE}
 	iptables -D FORWARD -i ${BRIDGEIF} -o ${INETIF} -p tcp -m multiport --dports ${TCPPORTS} -m comment --comment "000 Allow bridge to ${INETIF} forwarding for some ports" -j ACCEPT
 	iptables -D FORWARD -i ${INETIF} -o ${BRIDGEIF} -p tcp -m multiport --sports ${TCPPORTS} -m comment --comment "000 Allow ${INETIF} to bridge forwarding for some ports" -j ACCEPT
-	iptables -D FORWARD -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu
+	iptables -D FORWARD -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --set-mss 1240
 	iptables -t nat -D POSTROUTING -o ${INETIF} -p udp -m multiport --dports ${UDPPORTS} -m comment --comment "000 Masquerade traffic for some ports" -j SNAT --to-source ${PUBV4_BARE}
 	iptables -D FORWARD -i ${BRIDGEIF} -o ${INETIF} -p udp -m multiport --dports ${UDPPORTS} -m comment --comment "000 Allow bridge to ${INETIF} forwarding for some ports" -j ACCEPT
 	iptables -D FORWARD -i ${INETIF} -o ${BRIDGEIF} -p udp -m multiport --sports ${UDPPORTS} -m comment --comment "000 Allow ${INETIF} to bridge forwarding for some ports" -j ACCEPT
