@@ -2,8 +2,8 @@
 
 PACKAGE="batctl"
 REMOTE="git://git.open-mesh.org/batctl.git"
-TAG="v2022.3"
-TARGET_VERSION="2022.3"
+TAG="v2023.3"
+TARGET_VERSION="2023.3"
 PKG_RELEASE_PREFIX="0~tecff"
 PKG_RELEASE="1"
 MAINTAINER="rotanid"
@@ -25,6 +25,9 @@ if [[ "$RUNNING_DISTRO_VERSION" = "10"* ]]; then
 elif [[ "$RUNNING_DISTRO_VERSION" = "11"* ]]; then
 	# Debian Bullseye
 	PKG_RELEASE="${PKG_RELEASE_PREFIX}~deb11u${PKG_RELEASE}"
+elif [[ "$RUNNING_DISTRO_VERSION" = "12"* ]]; then
+	# Debian Bookworm
+	PKG_RELEASE="${PKG_RELEASE_PREFIX}~deb12u${PKG_RELEASE}"
 else
 	echo "the currently running $RUNNING_DISTRO version ( $RUNNING_DISTRO_VERSION ) of your distro is not supported yet by this build script."
 	exit 1
