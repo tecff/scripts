@@ -2,8 +2,8 @@
 
 PACKAGE="batman-adv"
 REMOTE="git://git.open-mesh.org/batman-adv.git"
-TAG="v2023.3"
-KMOD_VERSION="2023.3"
+TAG="v2024.0"
+KMOD_VERSION="2024.0"
 PKG_RELEASE_PREFIX="0~tecff"
 PKG_RELEASE="1"
 BUILD_ROOT="/tmp/batman-adv-build"
