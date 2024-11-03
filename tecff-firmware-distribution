@@ -2,7 +2,7 @@
 # this script copies gluon firmware images to their public distribution points
 # dependencies: rsync
 
-SRVSSH="gw02.tecff.de"
+SRVSSH="host03.tecff.de"
 SRVSSH_USR="root"
 SRVSSH_PATH="/var/www/html/fw"
 SRVSSH_DIR="v8"
