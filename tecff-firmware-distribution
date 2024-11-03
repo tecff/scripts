@@ -51,10 +51,25 @@ sleep 5
 # ssh copy
 echo "starting ssh copy... (needs ssh agent redirection)"
 rsync -rltv --delete $SRC/images/factory/ $SRVSSH_USR@$SRVSSH:/$SRVSSH_PATH/$SRVSSH_DIR/$BRANCH/factory/
+if [ $? -ne 0 ]; then
+	echo "rsync of factory images failed. aborting."
+	exit 1
+fi
 rsync -rltv --delete $SRC/images/sysupgrade/ $SRVSSH_USR@$SRVSSH:/$SRVSSH_PATH/$SRVSSH_DIR/$BRANCH/sysupgrade/
+if [ $? -ne 0 ]; then
+	echo "rsync of sysupgrade images failed. aborting."
+	exit 1
+fi
 if [ -d "$SRC/images/other/" ]; then
 	rsync -rltv --delete $SRC/images/other/ $SRVSSH_USR@$SRVSSH:/$SRVSSH_PATH/$SRVSSH_DIR/$BRANCH/other/
+	if [ $? -ne 0 ]; then
+		echo "rsync of other images failed. aborting."
+		exit 1
+	fi
 fi
 rsync -rltv $SRC/packages/ $SRVSSH_USR@$SRVSSH:/$SRVSSH_PATH/modules/
-
+if [ $? -ne 0 ]; then
+	echo "there was an error during rsync of packages/modules".
+	exit 1
+fi
 echo "finished."
