@@ -10,17 +10,21 @@ DOH_IP6="2001:4860:4860::8844 2001:4860:4860::8888 2a06:98c1:52::4 2803:f800:53:
 
 if [ "$MODE" = "start" ]; then
 	for ip4 in $DOH_IP4; do
-		iptables -I FORWARD -d $ip4 -m comment --comment "reject DoH IPv4" -j REJECT --reject-with icmp-admin-prohibited
+		iptables -I FORWARD -p tcp -d $ip4 -m comment --comment "reject DoH IPv4" -j REJECT --reject-with icmp-admin-prohibited
+		iptables -I FORWARD -p udp -d $ip4 -m comment --comment "reject DoH IPv4" -j REJECT --reject-with icmp-admin-prohibited
 	done
 	for ip6 in $DOH_IP6; do
-		ip6tables -I FORWARD -d $ip6 -m comment --comment "reject DoH IPv6" -j REJECT --reject-with icmp6-adm-prohibited
+		ip6tables -I FORWARD -p tcp -d $ip6 -m comment --comment "reject DoH IPv6" -j REJECT --reject-with icmp6-adm-prohibited
+		ip6tables -I FORWARD -p udp -d $ip6 -m comment --comment "reject DoH IPv6" -j REJECT --reject-with icmp6-adm-prohibited
 	done
 elif [ "$MODE" = "stop" ]; then
 	for ip6 in $DOH_IP6; do
-		ip6tables -D FORWARD -d $ip6 -m comment --comment "reject DoH IPv6" -j REJECT --reject-with icmp6-adm-prohibited
+		ip6tables -D FORWARD -p tcp -d $ip6 -m comment --comment "reject DoH IPv6" -j REJECT --reject-with icmp6-adm-prohibited
+		ip6tables -D FORWARD -p udp -d $ip6 -m comment --comment "reject DoH IPv6" -j REJECT --reject-with icmp6-adm-prohibited
 	done
 	for ip4 in $DOH_IP4; do
-		iptables -D FORWARD -d $ip4 -m comment --comment "reject DoH IPv4" -j REJECT --reject-with icmp-admin-prohibited
+		iptables -D FORWARD -p tcp -d $ip4 -m comment --comment "reject DoH IPv4" -j REJECT --reject-with icmp-admin-prohibited
+		iptables -D FORWARD -p udp -d $ip4 -m comment --comment "reject DoH IPv4" -j REJECT --reject-with icmp-admin-prohibited
 	done
 else
 	exit 1
