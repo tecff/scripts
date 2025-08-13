@@ -18,10 +18,7 @@ INSTALL_PREFIX="/usr"
 
 RUNNING_DISTRO="$(lsb_release -s -i)"
 RUNNING_DISTRO_VERSION="$(lsb_release -r -s)"
-if [[ "$RUNNING_DISTRO_VERSION" = "10"* ]]; then
-	# Debian Buster
-	PKG_RELEASE="${PKG_RELEASE_PREFIX}~deb10u${PKG_RELEASE}"
-elif [[ "$RUNNING_DISTRO_VERSION" = "11"* ]]; then
+if [[ "$RUNNING_DISTRO_VERSION" = "11"* ]]; then
 	# Debian Bullseye
 	PKG_RELEASE="${PKG_RELEASE_PREFIX}~deb11u${PKG_RELEASE}"
 elif [[ "$RUNNING_DISTRO_VERSION" = "12"* ]]; then
