@@ -1,7 +1,7 @@
 #!/bin/bash
 
 PACKAGE="batman-adv"
-REMOTE="git://git.open-mesh.org/batman-adv.git"
+REMOTE="https://git.open-mesh.org/batman-adv.git"
 TAG="v2025.2"
 KMOD_VERSION="2025.2"
 PKG_RELEASE_PREFIX="0~tecff"
@@ -10,7 +10,6 @@ BUILD_ROOT="/tmp/batman-adv-build"
 MAINTAINER="rotanid"
 PKGLICENSE="GPL2"
 PKGGROUP="net"
-PKGALTSRC="https://git.open-mesh.org/batman-adv.git"
 PKGDESC="B.A.T.M.A.N. advanced external module"
 
 RUNNING_DISTRO="$(lsb_release -s -i)"
@@ -104,7 +103,6 @@ install() {
 		--pkgversion "${KMOD_VERSION}" \
 		--pkgrelease "${PKG_RELEASE}" \
 		--pkgsource "${REMOTE}" \
-		--pkgaltsource "${PKGALTSRC}" \
 		--pkglicense "${PKGLICENSE}" \
 		--pkggroup "${PKGGROUP}" \
 		--maintainer "${MAINTAINER}" \
