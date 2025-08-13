@@ -27,9 +27,6 @@ if [[ "$RUNNING_DISTRO" = "Debian" ]]; then
 	elif [[ "$RUNNING_KERNEL_REL" = "5.10.0"* ]]; then
 		# bullseye
 		REQUIRED_KERNEL=$(dpkg -s linux-image-amd64 | grep "^Depends" | cut -d" " -f2)
-	elif [[ "$RUNNING_KERNEL_REL" = "4.19.0"* ]]; then
-		# buster
-		REQUIRED_KERNEL=$(dpkg -s linux-image-amd64 | grep "^Depends" | sed 's/Depends:\s*//')
 	else
 		echo "the currently running kernel version ( $RUNNING_KERNEL_REL ) is not supported yet by this build script."
 		exit 1
