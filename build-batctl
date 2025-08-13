@@ -50,7 +50,7 @@ prepare() {
 	rm -rf $BUILD_ROOT
 	git clone "$REMOTE" "$BUILD_ROOT"
 	cd $BUILD_ROOT
-	git checkout "$TAG"
+	git switch --detach "$TAG"
 	
 	# apply patches if they exist
 	if [ "$(ls -A /usr/src/${PACKAGE}_patches/)" ]; then
