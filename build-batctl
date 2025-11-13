@@ -24,8 +24,11 @@ if [[ "$RUNNING_DISTRO_VERSION" = "11"* ]]; then
 elif [[ "$RUNNING_DISTRO_VERSION" = "12"* ]]; then
 	# Debian Bookworm
 	PKG_RELEASE="${PKG_RELEASE_PREFIX}~deb12u${PKG_RELEASE}"
+elif [[ "$RUNNING_DISTRO_VERSION" = "13"* ]]; then
+	# Debian Trixie
+	PKG_RELEASE="${PKG_RELEASE_PREFIX}~deb13u${PKG_RELEASE}"
 else
-	echo "the currently running $RUNNING_DISTRO version ( $RUNNING_DISTRO_VERSION ) of your distro is not supported yet by this build script."
+	echo "the currently running $RUNNING_DISTRO version ( $RUNNING_DISTRO_VERSION ) of your distro is not supported by this build script."
 	exit 1
 fi
 
