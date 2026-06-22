@@ -1,208 +1,268 @@
 #!/bin/sh
 #
 # determines the maximum packet size of the current connection to a specific host
-# tested on Arch Linux (bash) and Gluon (busybox ash)
+# tested on Arch Linux (bash/dash) and Gluon (busybox ash)
 #
 # based on script written by @pinguinpfleger (Kai Hauser) for Freifunk Suedpfalz
 # https://github.com/freifunk-suedpfalz/check_icmp_packetsize
 # license: GPLv3
 #
 
-if [ $# -eq 0 ]; then
-	echo "Usage: $(basename $0) [-v] <domain>"
-	exit
-fi
+set -u  # treat unset variables as an error
 
+# ---------- configuration ----------
 checkMinPacketSize=1232
 checkMaxPacketSize=1500
 
+# ---------- argument parsing ----------
+
+if [ "$#" -eq 0 ]; then
+    echo "Usage: $(basename "$0") [-v] <host-or-ip>" >&2
+    exit 1
+fi
+
+_verbose=0
+_host=""
+
 if [ "$1" = "-v" ]; then
-	verbose="1"
-	host="$2"
+    _verbose=1
+    if [ "$#" -lt 2 ]; then
+        echo "Usage: $(basename "$0") [-v] <host-or-ip>" >&2
+        exit 1
+    fi
+    _host=$2
 else
-	verbose="0"
-	host="$1"
+    _host=$1
 fi
 
-if ! nslookup $host >/dev/null; then
-	echo "name resolution of $host failed."
-	exit
-fi
+# ---------- helpers (all take arguments, no globals) ----------
 
-if [ -e /lib/gluon/release ]; then
-	if ! batctl o|grep -q mesh-vpn; then
-		echo "This Gluon node has no VPN connection."
-		exit
-	fi
-	if ! test -x /bin/opkg; then
-		echo "This Gluon node doesn't have opkg. The necessary advanced ping utilities can't be installed."
-		exit
-	fi
-	for i in iputils-ping iputils-ping6; do
-		if ! opkg list-installed|grep -q $i; then
-			echo "This Gluon node doesn't have the necessary advanced ping utility yet. Please install it first:"
-			echo "> opkg update"
-			echo "> opkg install iputils-ping iputils-ping6"
-			exit
-		fi
-	done
-fi
-
-if ping 2>&1|grep -q interval; then
-	pingparams="-q -c 2 -W 1 -M do -i 0.2 -s"
-else
-	pingparams="-q -c 2 -W 1 -M do -s"
-fi
-ping4="ping"
-if command -v ping6 >/dev/null 2>&1; then
-	ping6="ping6"
-else
-	ping6="ping -6"
-	ping4="ping -4"
-fi
-
-mtu_check () {
-	# if IPv6 is checked and there is either no IPv6 default route or there is none via br-wan on a device running Gluon
-	if [ "$1" = "IPv6" ] && ([ "$(ip -6 route show default|grep -q default; echo $? )" != "0" ] || ([ -e /lib/gluon/release ] && [ $(ip -6 route show default|grep -q "default.*br-wan"; echo $? ) != "0" ])); then
-		echo "There's no IPv6 connection as there is now default route."
-		return
-	fi
-
-	if [ -e /lib/gluon/release ]; then
-		ipv4addr="$(ip -4 addr show dev br-wan scope global | grep inet | head -1 | awk '{ print $2 }' | cut -d"/" -f1)"
-		ping4cmd="${ping4} -I ${ipv4addr} ${pingparams}"
-		ipv6addr="$(ip -6 addr show dev br-wan scope global | grep inet6 | grep -v "inet6 fd" | head -1 | awk '{ print $2 }' | cut -d"/" -f1)"
-		ping6cmd="${ping6} -I ${ipv6addr} ${pingparams}"
-	else
-		ping4cmd="${ping4} ${pingparams}"
-		ping6cmd="${ping6} ${pingparams}"
-	fi
-
-	if [ ${verbose} -eq 1 ];then
-		echo "####################################################"
-		echo "Checking the smallest packet size ${checkMinPacketSize}"
-		echo "####################################################"
-		echo ""
-		echo "----------------------------------------------------------"
-	fi
-	if [ "$1" = "IPv6" ]; then
-		if [ ${verbose} -eq 1 ];then
-			${ping6cmd} ${checkMinPacketSize} ${host}
-		else
-			${ping6cmd} ${checkMinPacketSize} ${host} > /dev/null
-		fi
-	else
-		if [ ${verbose} -eq 1 ];then
-			${ping4cmd} ${checkMinPacketSize} ${host}
-		else
-			${ping4cmd} ${checkMinPacketSize} ${host} > /dev/null
-		fi
-	fi
-
-	if [ $? -ne 0 ]; then
-		echo "Smallest packet size ${checkMinPacketSize} is not usable."
-		return
-	fi
-	if [ ${verbose} -eq 1 ];then
-		echo "----------------------------------------------------------"
-		echo ""
-		echo ""
-	fi
-
-	if [ ${verbose} -eq 1 ];then
-		echo "####################################################"
-		echo "Checking the biggest packet size ${checkMaxPacketSize}"
-		echo "####################################################"
-		echo ""
-		echo "----------------------------------------------------------"
-	fi
-	if [ "$1" = "IPv6" ]; then
-		if [ ${verbose} -eq 1 ];then
-			${ping6cmd} ${checkMaxPacketSize} ${host}
-		else
-			${ping6cmd} ${checkMaxPacketSize} ${host} > /dev/null
-		fi
-	else
-		if [ ${verbose} -eq 1 ];then
-			${ping4cmd} ${checkMaxPacketSize} ${host}
-		else
-			${ping4cmd} ${checkMaxPacketSize} ${host} > /dev/null
-		fi
-	fi
-	if [ $? -eq 0 ]; then
-		echo "$1: packet size: ${checkMaxPacketSize}"
-		return
-	fi
-	if [ ${verbose} -eq 1 ];then
-		echo "----------------------------------------------------------"
-		echo ""
-		echo ""
-	fi
-
-	if [ ${verbose} -eq 1 ];then
-		echo "####################################################"
-		echo "determining packet size..."
-		echo "####################################################"
-		echo ""
-	fi
-	step=$(((${checkMaxPacketSize} - ${checkMinPacketSize}) / 2))
-	[ $((${step} % 2)) -eq 0 ] || step=$((${step} + 1)) #falls ungerade um 1 erhöhen
-
-	checkPacketSize=$((${checkMinPacketSize} + ${step}))
-
-	while [ ${step} -ge 1 ]; do
-		[ ${verbose} -eq 1 ] && echo "Step: $step"
-		[ ${verbose} -eq 1 ] && echo "checkPacketSize: ${checkPacketSize}"
-		step=$(($step / 2))
-		if [ ${step} -ne 1 ];then
-			[ $((${step} % 2)) -eq 0 ] || step=$((${step} + 1))
-		fi
-		if [ ${verbose} -eq 1 ];then
-			echo ""
-			echo ""
-			echo "----------------------------------------------------------"
-		fi
-		if [ "$1" = "IPv6" ]; then
-			if [ ${verbose} -eq 1 ];then
-				${ping6cmd} ${checkPacketSize} ${host}
-			else
-				${ping6cmd} ${checkPacketSize} ${host} > /dev/null
-			fi
-		else
-			if [ ${verbose} -eq 1 ];then
-				${ping4cmd} ${checkPacketSize} ${host}
-			else
-				${ping4cmd} ${checkPacketSize} ${host} > /dev/null
-			fi
-		fi
-		if [ $? -eq 0 ]; then #ping ging
-			if [ "$1" = "IPv6" ]; then
-				PacketSize=${checkPacketSize}
-			else
-				PacketSize=${checkPacketSize}
-			fi
-			checkPacketSize=$((${checkPacketSize} + ${step}))
-		else
-			checkPacketSize=$((${checkPacketSize} - ${step}))
-		fi
-		if [ ${checkPacketSize} -gt ${checkMaxPacketSize} ]; then
-			continue
-		fi
-		if [ ${checkPacketSize} -lt ${checkMinPacketSize} ]; then
-			continue
-		fi
-		if [ ${verbose} -eq 1 ];then
-			echo "----------------------------------------------------------"
-		fi
-	done
-
-	if [ ${PacketSize} -ne 0 ]; then
-		PacketSize=$((${PacketSize} + 8))
-		echo "$1: determined packet size: $PacketSize byte (+ Transport-IP-Header: IPv4: 20 byte | IPv6: 40 byte)"
-	else
-		echo "$1: could not determine a packet size."
-	fi
+is_ipv4() {
+    printf '%s\n' "$1" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$'
 }
 
-mtu_check IPv4
-mtu_check IPv6
+is_ipv6() {
+    printf '%s\n' "$1" | grep -Eq '^[0-9A-Fa-f]*:[0-9A-Fa-f:]*$'
+}
+
+# Portable DNS check. Tries modern nslookup querytype first, falls back to
+# generic nslookup + grep for BusyBox/minimal systems.
+has_dns_record() {
+    __host="$1"
+    __rtype="$2"
+
+    # Attempt 1: GNU nslookup / recent BusyBox (-querytype)
+    if ! __out=$(nslookup -querytype="$__rtype" "$__host" 2>/dev/null); then
+        :
+    elif printf '%s\n' "$__out" | grep -A1 "Name:" | grep -q "Address:"; then
+        return 0
+    fi
+
+    # Attempt 2: alternate syntax (-type)
+    if ! __out=$(nslookup -type="$__rtype" "$__host" 2>/dev/null); then
+        :
+    elif printf '%s\n' "$__out" | grep -A1 "Name:" | grep -q "Address:"; then
+        return 0
+    fi
+
+    # Fallback: generic nslookup (older BusyBox). A valid record section contains
+    # a "Name:" line followed by an "Address:" line. NXDOMAIN output has no "Name:".
+    if ! __out=$(nslookup "$__host" 2>/dev/null); then
+        return 1
+    fi
+    # shellcheck disable=SC3057
+    case "$__rtype" in
+        A|AAAA)
+            printf '%s\n' "$__out" | grep -q "^Name:"
+            ;;
+        *)
+            return 1
+            ;;
+    esac
+}
+
+# ---------- general DNS sanity check ----------
+# Some corporate resolvers return SERVFAIL for AAAA even when A works.
+# Only fail if NEITHER A nor AAAA resolves.
+if ! is_ipv4 "$_host" && ! is_ipv6 "$_host"; then
+    if ! has_dns_record "$_host" "A" && ! has_dns_record "$_host" "AAAA"; then
+        echo "Error: Name resolution of '$_host' failed entirely." >&2
+        exit 20
+    fi
+fi
+
+# ---------- Gluon environment checks ----------
+
+if [ -e /lib/gluon/release ]; then
+    if ! batctl o 2>/dev/null | grep -q mesh-vpn; then
+        echo "This Gluon node has no VPN connection." >&2
+        exit 3
+    fi
+
+    if ! [ -x /bin/opkg ]; then
+        echo "This Gluon node doesn't have opkg. The necessary advanced ping utilities can't be installed." >&2
+        exit 4
+    fi
+
+    for _pkg in iputils-ping iputils-ping6; do
+        if ! opkg list-installed 2>/dev/null | grep -q "$_pkg"; then
+            echo "This Gluon node doesn't have the necessary advanced ping utility yet. Please install it first:" >&2
+            echo "> opkg update && opkg install iputils-ping iputils-ping6" >&2
+            exit 5
+        fi
+    done
+fi
+
+# ---------- ping command selection ----------
+
+if ping 2>&1 | grep -q interval; then
+    pingparams="-q -c 2 -W 1 -M do -i 0.2 -s"
+else
+    pingparams="-q -c 2 -W 1 -M do -s"
+fi
+
+ping4="ping"
+if command -v ping6 >/dev/null 2>&1; then
+    ping6="ping6"
+else
+    ping6="ping -6"
+    ping4="ping -4"
+fi
+
+# ---------- safe ping execution (POSIX/ash compatible) ----------
+# Instead of storing commands in a string and relying on unquoted expansion,
+# we build positional parameters with "set --" and execute via "$@".
+# This avoids SC2086 word-splitting issues while staying ash-compatible.
+
+_p4addr=""
+_p6addr=""
+
+ping_host() {
+    __proto="$1"
+    __size="$2"
+    __target="$3"
+    __verb="$4"
+
+    if [ "$__proto" = "IPv4" ]; then
+        if [ -n "$_p4addr" ]; then
+            set -- "$ping4" -I "$_p4addr" $pingparams "$__size" "$__target"
+        else
+            set -- "$ping4" $pingparams "$__size" "$__target"
+        fi
+    else
+        if [ -n "$_p6addr" ]; then
+            set -- "$ping6" -I "$_p6addr" $pingparams "$__size" "$__target"
+        else
+            set -- "$ping6" $pingparams "$__size" "$__target"
+        fi
+    fi
+
+    if [ "$__verb" -eq 1 ]; then
+        "$@"
+    else
+        "$@" >/dev/null 2>&1
+    fi
+}
+
+# ---------- core function ----------
+
+mtu_check() {
+    _proto="$1"
+
+    # 1. Literal / DNS checks
+    if [ "$_proto" = "IPv4" ]; then
+        if is_ipv6 "$_host"; then return 10; fi
+        if ! is_ipv4 "$_host" && ! has_dns_record "$_host" "A"; then
+            echo "IPv4: No A record found for '$_host'."
+            return 20
+        fi
+    else
+        if is_ipv4 "$_host"; then return 10; fi
+        if ! is_ipv6 "$_host" && ! has_dns_record "$_host" "AAAA"; then
+            echo "IPv6: No AAAA record found for '$_host'."
+            return 20
+        fi
+    fi
+
+    # 2. Route Logic
+    if [ "$_proto" = "IPv6" ]; then
+        if ! ip -6 route show default 2>/dev/null | grep -q "^default"; then
+            echo "IPv6: No default route available." >&2
+            return 10
+        fi
+        if [ -e /lib/gluon/release ] && ! ip -6 route show default 2>/dev/null | grep -q "br-wan"; then
+            echo "IPv6: Default route not on br-wan (Gluon), skipping." >&2
+            return 10
+        fi
+    fi
+
+    # 3. Bind to br-wan IPs on Gluon
+    _p4addr=""
+    _p6addr=""
+    if [ -e /lib/gluon/release ]; then
+        _p4addr=$(ip -4 addr show dev br-wan scope global 2>/dev/null | grep inet | head -1 | awk '{print $2}' | cut -d/ -f1)
+        _p6addr=$(ip -6 addr show dev br-wan scope global 2>/dev/null | grep inet6 | grep -v "inet6 fd" | head -1 | awk '{print $2}' | cut -d/ -f1)
+    fi
+
+    [ "$_verbose" -eq 1 ] && echo "--- Checking $_proto for $_host ---"
+
+    # 4. Initial Connectivity Check
+    if ! ping_host "$_proto" "$checkMinPacketSize" "$_host" 0; then
+        echo "$_proto: Smallest packet size $checkMinPacketSize is not usable (Host unreachable or ICMP blocked)."
+        return 30
+    fi
+
+    # 5. Max Size Check
+    if ping_host "$_proto" "$checkMaxPacketSize" "$_host" 0; then
+        echo "$_proto: Packet size: $checkMaxPacketSize"
+        return 0
+    fi
+
+    # 6. Binary Search
+    _low=$checkMinPacketSize
+    _high=$checkMaxPacketSize
+    # FIX from v3: initialize with the KNOWN GOOD minimum
+    _best=$checkMinPacketSize
+
+    while [ $((_high - _low)) -gt 1 ]; do
+        _mid=$(( (_low + _high) / 2 ))
+        [ "$_verbose" -eq 1 ] && echo "Testing size: $_mid"
+
+        if ping_host "$_proto" "$_mid" "$_host" 0; then
+            _low=$_mid
+            _best=$_mid
+        else
+            _high=$_mid
+        fi
+    done
+
+    # _best is the max ping -s payload. +8 = ICMP echo header.
+    # On-wire total = payload + ICMP(8) + IPv4(20) / IPv6(40).
+    _icmp_total=$((_best + 8))
+    if [ "$_proto" = "IPv4" ]; then
+        _wire_total=$((_icmp_total + 20))
+    else
+        _wire_total=$((_icmp_total + 40))
+    fi
+    echo "$_proto: ping -s payload: $_best (ICMP: $_icmp_total, on-wire: $_wire_total)"
+    return 0
+}
+
+# ---------- run ----------
+
+mtu_check "IPv4"
+_rc4=$?
+
+mtu_check "IPv6"
+_rc6=$?
+
+# Exit with the highest error code if both protocols fail.
+# "Skipped" (10, 20) counts as failure for this purpose.
+if [ "$_rc4" -ne 0 ] && [ "$_rc6" -ne 0 ]; then
+    if [ "$_rc4" -ge "$_rc6" ]; then
+        exit "$_rc4"
+    else
+        exit "$_rc6"
+    fi
+fi
+exit 0
