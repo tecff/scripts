@@ -1,4 +1,9 @@
 #!/bin/bash
+#
+# DEPRECATED: This script is superseded by the batman-adv-dkms package.
+# See https://github.com/tecff/batman-adv-dkms for the DKMS-based replacement
+# that auto-rebuilds on kernel upgrades without per-kernel pinning.
+# Kept for reference only.
 
 PACKAGE="batman-adv"
 REMOTE="https://git.open-mesh.org/batman-adv.git"
